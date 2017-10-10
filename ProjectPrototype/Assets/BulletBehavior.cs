@@ -8,9 +8,11 @@ public class BulletBehavior : MonoBehaviour {
 
     public float speed; //Speed at which the bullet travels
     public float range; //Distance bullet travels before despawning
+    GameObject scorekeeper;
 
     // Use this for initialization
     void Start () {
+        scorekeeper = GameObject.Find("Scorekeeper");
         Destroy(gameObject, range / speed); //Destroys the bullet after a delay based on range and speed
 	}
 	
@@ -25,6 +27,7 @@ public class BulletBehavior : MonoBehaviour {
         //If the bullet collided with an object marked with target destroy them both
         if (collision.gameObject.CompareTag("Target"))
         {
+            scorekeeper.GetComponent<Scorekeeper>().ScorePoint();
             Destroy(collision.gameObject);
             Destroy(gameObject);
         }
