@@ -9,6 +9,7 @@ public class FireControl : MonoBehaviour {
     public float reloadTime; //Time between shots in ms
     public GameObject bulletPrefab; //Bullet object
 
+    //Variables to control fire cycle
     Timer reloadTimer;
     bool readyFire;
 
