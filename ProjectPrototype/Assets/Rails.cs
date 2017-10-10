@@ -5,7 +5,7 @@ using UnityEngine;
 //This script is responsible for moving the player and camera along the Z direction, and any looping of scene
 public class Rails : MonoBehaviour {
 
-    public float speed = 1.0f;
+    public float speed; //Speed at which the player moves forward
 
 	// Use this for initialization
 	void Start () {
