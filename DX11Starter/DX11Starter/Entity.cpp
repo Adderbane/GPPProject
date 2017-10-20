@@ -9,10 +9,21 @@ Entity::Entity(Mesh* mesh, Material* material)
 	this->scale = XMFLOAT3(1.0f, 1.0f, 1.0f);
 	XMStoreFloat4x4(&world, XMMatrixTranspose(XMMatrixIdentity()));
 	isWorldValid = true;
+	this->active = false;
 }
 
 Entity::~Entity()
 {
+}
+
+//Control active toggle
+bool Entity::IsActive()
+{
+	return active;
+}
+void Entity::SetActive(bool active)
+{
+	this->active = active;
 }
 
 //Setters

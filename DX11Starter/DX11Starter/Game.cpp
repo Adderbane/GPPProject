@@ -29,7 +29,7 @@ Game::Game(HINSTANCE hInstance)
 	XMStoreFloat3(&dirLight1.Direction,    XMVectorSet(+1.0f, -1.0f, +1.0f, 0.0f));
 
 	XMStoreFloat4(&dirLight2.AmbientColor, XMVectorSet(+0.0f, +0.0f, +0.0f, 1.0f));
-	XMStoreFloat4(&dirLight2.DiffuseColor, XMVectorSet(+1.0f, +1.0f, +1.0f, 1.0f));
+	XMStoreFloat4(&dirLight2.DiffuseColor, XMVectorSet(+0.0f, +0.0f, +0.0f, 1.0f));
 	XMStoreFloat3(&dirLight2.Direction,    XMVectorSet(-1.0f, -1.0f, +1.0f, 0.0f));
 
 	prevMousePos.x = width/2;
@@ -50,7 +50,7 @@ Game::Game(HINSTANCE hInstance)
 // --------------------------------------------------------
 Game::~Game()
 {
-	//Clean up Meshes, Materials, and Entities lists
+	//Clean up Resource lists
 	for (pair<char* const, Mesh*> &mesh : meshes)
 	{
 		delete mesh.second;
@@ -63,11 +63,15 @@ Game::~Game()
 		material.second = nullptr;
 	}
 	materials.clear();
+
+	//Clean up Game Objects
 	while (entities.size() > 0)
 	{
 		delete entities[entities.size()-1];
 		entities.pop_back();
 	}
+
+	delete targetManager;
 
 	//Clean up camera
 	delete camera;
@@ -97,8 +101,8 @@ void Game::Init()
 	// Helper methods for loading shaders, creating some basic
 	// geometry to draw and some simple camera matrices.
 	//  - You'll be expanding and/or replacing these later
-	LoadShaders();
-	CreateBasicGeometry();
+	LoadResources();
+	SetupGameWorld();
 
 	// Tell the input assembler stage of the pipeline what kind of
 	// geometric primitives (points, lines or triangles) we want to draw.  
@@ -111,7 +115,7 @@ void Game::Init()
 // - SimpleShader provides helpful methods for sending
 //   data to individual variables on the GPU
 // --------------------------------------------------------
-void Game::LoadShaders()
+void Game::LoadResources()
 {
 	SimpleVertexShader* vertexShader = new SimpleVertexShader(device, context);
 	vertexShader->LoadShaderFile(L"VertexShader.cso");
@@ -154,23 +158,6 @@ void Game::LoadShaders()
 	metal->Release();
 	marble->Release();
 	sampler->Release();
-}
-
-// --------------------------------------------------------
-// Creates the geometry we're going to draw
-// --------------------------------------------------------
-void Game::CreateBasicGeometry()
-{
-	// Create some temporary variables to represent colors
-	// - Not necessary, just makes things more readable
-	XMFLOAT4 red = XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f);
-	XMFLOAT4 green = XMFLOAT4(0.0f, 1.0f, 0.0f, 1.0f);
-	XMFLOAT4 blue = XMFLOAT4(0.0f, 0.0f, 1.0f, 1.0f);
-	XMFLOAT4 cyan = XMFLOAT4(0.0f, 1.0f, 1.0f, 1.0f);
-	XMFLOAT4 magenta = XMFLOAT4(1.0f, 0.0f, 1.0f, 1.0f);
-	XMFLOAT4 yellow = XMFLOAT4(1.0f, 1.0f, 0.0f, 1.0f);
-	XMFLOAT4 black = XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f);
-	XMFLOAT4 white = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
 
 	//Load Models
 	meshes.insert(pair<char*, Mesh*>("cube", new Mesh("Assets/Models/cube.obj", device)));
@@ -178,20 +165,19 @@ void Game::CreateBasicGeometry()
 	meshes.insert(pair<char*, Mesh*>("cylinder", new Mesh("Assets/Models/cylinder.obj", device)));
 	meshes.insert(pair<char*, Mesh*>("helix", new Mesh("Assets/Models/helix.obj", device)));
 	meshes.insert(pair<char*, Mesh*>("sphere", new Mesh("Assets/Models/sphere.obj", device)));
+}
 
-	//Make entities
-	entities.push_back(new Entity(meshes.find("cube")->second, materials.find("wood")->second));
-	entities.push_back(new Entity(meshes.find("cone")->second, materials.find("metal")->second));
-	entities.push_back(new Entity(meshes.find("cylinder")->second, materials.find("marble")->second));
-	entities.push_back(new Entity(meshes.find("helix")->second, materials.find("marble")->second));
-	entities.push_back(new Entity(meshes.find("sphere")->second, materials.find("metal")->second));
-
-	//Move away from origin
-	entities[0]->Move(2.0f, 0.0f, 0.0f);
-	entities[1]->Move(0.0f, 0.0f, 2.0f);
-	entities[2]->Move(-2.0f, 0.0f, 0.0f);
-	entities[3]->Move(2.0f, 1.0f, 0.0f);
-	entities[4]->Move(0.0f, -1.0f, 0.0f); 
+// --------------------------------------------------------
+// Creates the geometry we're going to draw
+// --------------------------------------------------------
+void Game::SetupGameWorld()
+{
+	//Make target field
+	targetManager = new TargetManager(meshes.find("cube")->second, materials.find("metal")->second);
+	for each (Entity* e in targetManager->GetTargets())
+	{
+		entities.push_back(e);
+	}
 }
 
 
@@ -219,14 +205,6 @@ void Game::Update(float deltaTime, float totalTime)
 
 	//Update Camera
 	camera->Update(deltaTime, totalTime);
-
-	//Animate objects
-	entities[2]->Spin(XM_PIDIV2 * deltaTime, XM_PIDIV2 * deltaTime, XM_PIDIV2 * deltaTime);
-	entities[1]->Resize(deltaTime * sin(totalTime), deltaTime * sin(totalTime), deltaTime * sin(totalTime));
-	entities[0]->Move(0.0f, 0.0f, deltaTime);
-	entities[3]->Spin(XM_PI * deltaTime, XM_PI * deltaTime, XM_PI * deltaTime);
-	entities[4]->Spin(XM_PIDIV4 * deltaTime, XM_PIDIV4 * deltaTime, XM_PIDIV4 * deltaTime);
-
 }
 
 // --------------------------------------------------------
@@ -251,9 +229,23 @@ void Game::Draw(float deltaTime, float totalTime)
 	for (size_t i = 0; i < entities.size(); i++)
 	{
 		Entity* entity = entities[i];
+
+		//Skip drawing if entity is not active
+		if (entity->IsActive() != true)
+		{
+			continue;
+		}
+
 		Mesh* mesh = entity->GetMesh();
 		SimpleVertexShader* vShader = entity->GetMaterial()->GetVertexShader();
 		SimplePixelShader* pShader = entity->GetMaterial()->GetPixelShader();
+
+		// Set the vertex and pixel shaders to use for the next Draw() command
+		//  - These don't technically need to be set every frame...YET
+		//  - Once you start applying different shaders to different objects,
+		//    you'll need to swap the current shaders before each draw
+		vShader->SetShader();
+		pShader->SetShader();
 
 		// Send data to shader variables
 		//  - Do this ONCE PER OBJECT you're drawing
@@ -276,13 +268,6 @@ void Game::Draw(float deltaTime, float totalTime)
 		//  - If you skip this, the "SetMatrix" calls above won't make it to the GPU!
 		vShader->CopyAllBufferData();
 		pShader->CopyAllBufferData();
-
-		// Set the vertex and pixel shaders to use for the next Draw() command
-		//  - These don't technically need to be set every frame...YET
-		//  - Once you start applying different shaders to different objects,
-		//    you'll need to swap the current shaders before each draw
-		vShader->SetShader();
-		pShader->SetShader();
 
 		// Set buffers in the input assembler
 		//  - Do this ONCE PER OBJECT you're drawing, since each object might

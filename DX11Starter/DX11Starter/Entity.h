@@ -13,6 +13,10 @@ public:
 	Entity(Mesh* mesh, Material* material);
 	~Entity();
 
+	//Control active toggle
+	bool IsActive();
+	void SetActive(bool active);
+
 	void SetPosition(float x, float y, float z);
 	void SetRotation(float x, float y, float z);
 	void SetScale(float x, float y, float z);
@@ -29,8 +33,14 @@ public:
 	Material* GetMaterial();
 
 private:
+
+	bool active;
+
+	//Resources
 	Mesh* mesh;
 	Material* material;
+
+	//Drawing data
 	XMFLOAT4X4 world;
 	XMFLOAT3 position;
 	XMFLOAT3 rotation;

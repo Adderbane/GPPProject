@@ -8,6 +8,7 @@
 #include "Entity.h"
 #include "Camera.h"
 #include "Lights.h"
+#include "TargetManager.h"
 #include <vector>
 
 using namespace std;
@@ -35,16 +36,16 @@ public:
 private:
 
 	// Initialization helper methods - feel free to customize, combine, etc.
-	void LoadShaders();
-	void CreateBasicGeometry();
+	void LoadResources();
+	void SetupGameWorld();
 
-	//Game Object Collections
+	//Game Objects
 	vector<Entity*> entities;
+	TargetManager* targetManager;
 
 	//Resource Collections
 	unordered_map<char*, Mesh*> meshes;
 	unordered_map<char*, Material*> materials;
-	unordered_map<char*, SimpleSRV*> textures;
 	unordered_map<char*, SimpleVertexShader*> vertexShaders;
 	unordered_map<char*, SimplePixelShader*> pixelShaders;
 
