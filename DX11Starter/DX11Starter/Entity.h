@@ -32,6 +32,7 @@ public:
 	Mesh* GetMesh();
 	Material* GetMaterial();
 
+	virtual void Collides();
 private:
 
 	bool active;

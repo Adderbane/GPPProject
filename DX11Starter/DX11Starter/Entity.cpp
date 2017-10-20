@@ -118,6 +118,11 @@ Material* Entity::GetMaterial()
 	return material;
 }
 
+void Entity::Collides()
+{
+
+}
+
 //World calculation
 void Entity::RecalcWorld()
 {
