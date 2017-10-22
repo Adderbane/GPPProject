@@ -9,6 +9,8 @@
 #include "Camera.h"
 #include "Lights.h"
 #include "TargetManager.h"
+#include "FireManager.h"
+#include "Bullet.h"
 #include <vector>
 
 using namespace std;
@@ -41,6 +43,7 @@ private:
 
 	//Game Objects
 	vector<Entity*> entities;
+	FireManager* fireManager;
 	TargetManager* targetManager;
 
 	//Resource Collections
@@ -60,4 +63,3 @@ private:
 	// determining how far the mouse moved in a single frame.
 	POINT prevMousePos;
 };
-

@@ -118,6 +118,22 @@ Material* Entity::GetMaterial()
 	return material;
 }
 
+void Entity::Update(float deltaTime, float totalTime)
+{
+	if (this->IsActive() != true)
+	{
+		return;
+	}
+}
+
+void Entity::Draw()
+{
+	if (this->IsActive() != true)
+	{
+		return;
+	}
+}
+
 void Entity::Collides()
 {
 

@@ -72,6 +72,7 @@ Game::~Game()
 	}
 
 	delete targetManager;
+	delete fireManager;
 
 	//Clean up camera
 	delete camera;
@@ -178,6 +179,14 @@ void Game::SetupGameWorld()
 	{
 		entities.push_back(e);
 	}
+
+	//Make fire control
+	fireManager = new FireManager(meshes.find("sphere")->second, materials.find("marble")->second);
+	for each (Bullet* b in fireManager->GetBullets())
+	{
+		entities.push_back(b);
+	}
+
 }
 
 
@@ -203,8 +212,20 @@ void Game::Update(float deltaTime, float totalTime)
 	if (GetAsyncKeyState(VK_ESCAPE))
 		Quit();
 
+	if (GetAsyncKeyState('K') & 0x8000)
+	{
+		fireManager->Fire(deltaTime, totalTime, true);
+	}
+	else fireManager->Fire(deltaTime, totalTime, false);
+
 	//Update Camera
 	camera->Update(deltaTime, totalTime);
+
+	//Update Entities
+	for each (Entity* e in entities)
+	{
+		e->Update(deltaTime, totalTime);
+	}
 }
 
 // --------------------------------------------------------

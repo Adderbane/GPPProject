@@ -32,6 +32,8 @@ public:
 	Mesh* GetMesh();
 	Material* GetMaterial();
 
+	virtual void Update(float deltaTime, float totalTime);
+	virtual void Draw();
 	virtual void Collides();
 private:
 

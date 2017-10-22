@@ -1,15 +1,23 @@
 #pragma once
 #include"Entity.h"
+#include"Camera.h"
+#include<vector>
 
-class Bullet : Entity
+class Bullet : public Entity
 {
 public:
-	Bullet();
+	Bullet(Mesh* mesh, Material* material);
 	~Bullet();
-	void Collides();
+	void Update(float deltaTime, float totalTime) override;
+	void Draw() override;
+	void Collides() override;
+
+	void Launch(float timeStamp);
+
+	const static float range;
+	const static float speed;
+	const static float lifetime;
 private:
-	const float range = 60.0f;
-	const float speed = 15.0f;
-	const float lifetime = range / speed;
+	float spawnTime;
 };
 
