@@ -187,6 +187,10 @@ void Game::SetupGameWorld()
 		entities.push_back(b);
 	}
 
+	//Make player
+	player = new Player(meshes.find("cone")->second, materials.find("metal")->second);
+	//player->SetActive(true);
+	entities.push_back(player);
 }
 
 
@@ -218,6 +222,23 @@ void Game::Update(float deltaTime, float totalTime)
 	}
 	else fireManager->Fire(deltaTime, totalTime, false);
 
+	//player control
+	if (GetAsyncKeyState(VK_LEFT)) {
+		//move left
+		player->Move(-3 * deltaTime, 0, 0);
+	}
+	if (GetAsyncKeyState(VK_RIGHT)) {
+		//move right
+		player->Move(3 * deltaTime, 0, 0);
+	}
+	if (GetAsyncKeyState(VK_DOWN)) {
+		//move up (lean back)
+		player->Move(0, 3 * deltaTime, 0);
+	}
+	if (GetAsyncKeyState(VK_UP)) {
+		//move down (lean forward)
+		player->Move(0, -3 * deltaTime, 0);
+	}
 	//Update Camera
 	camera->Update(deltaTime, totalTime);
 
@@ -226,6 +247,7 @@ void Game::Update(float deltaTime, float totalTime)
 	{
 		e->Update(deltaTime, totalTime);
 	}
+	
 }
 
 // --------------------------------------------------------
@@ -308,6 +330,7 @@ void Game::Draw(float deltaTime, float totalTime)
 			0,     // Offset to the first index we want to use
 			0);    // Offset to add to each index when looking up vertices
 	}
+
 
 	// Present the back buffer to the user
 	//  - Puts the final frame we're drawing into the window so the user can see it
