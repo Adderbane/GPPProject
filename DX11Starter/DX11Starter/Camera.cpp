@@ -21,11 +21,12 @@ Camera::~Camera()
 }
 
 //Public mehtods
-void Camera::Update(float deltaTime, float totalTime)
+void Camera::Update(float deltaTime, float totalTime, XMFLOAT3 playerPosition)
 {
 	//Get direction
 	XMVECTOR rotation = XMQuaternionRotationRollPitchYaw(xRotation, yRotation, 0.0f);
-	XMVECTOR lookDir = XMVector3Rotate(XMVectorSet(0.0f, 0.0f, 1.0f, 0.0f), rotation);
+	XMVECTOR lookDir = XMLoadFloat3(&playerPosition) - XMLoadFloat3(&camPosition);
+	lookDir = XMVector3Normalize(lookDir);
 	XMVECTOR upDir = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
 
 	XMVECTOR position = XMLoadFloat3(&camPosition);
@@ -55,6 +56,8 @@ void Camera::Update(float deltaTime, float totalTime)
 	{
 		position = XMVectorAdd(position, -1.0f * upDir * speed * deltaTime);
 	}
+
+	//Move camera forward
 	
 	//Get view matrix
 	XMMATRIX view = XMMatrixLookToLH(position, lookDir, upDir);
@@ -96,6 +99,17 @@ void Camera::Resize(float width, float height)
 	this->height = height;
 
 	RecalcProj();
+}
+
+void Camera::SetPosition(float x, float y, float z)
+{
+	camPosition = XMFLOAT3(x, y, z);
+}
+
+void Camera::SetRotation(float x, float y)
+{
+	xRotation = x;
+	yRotation = y;
 }
 
 //Getters
