@@ -13,11 +13,13 @@ public:
 	void Collides() override;
 
 	void Launch(float timeStamp);
+	void Link(Entity* player);
 
 	const static float range;
 	const static float speed;
 	const static float lifetime;
 private:
 	float spawnTime;
+	Entity* player;
 };
 
