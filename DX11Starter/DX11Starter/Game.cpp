@@ -1,6 +1,7 @@
 #include "Game.h"
 #include "Vertex.h"
 #include "WICTextureLoader.h"
+#include <math.h>
 
 // For the DirectX Math library
 using namespace DirectX;
@@ -247,7 +248,31 @@ void Game::Update(float deltaTime, float totalTime)
 	{
 		e->Update(deltaTime, totalTime);
 	}
-	
+
+
+	CheckForCollisions(fireManager->GetBullets(), targetManager->GetTargets());
+  
+}
+
+void Game::CheckForCollisions(vector<Bullet*> l1, vector<Entity*> l2)
+{
+	for (Entity* e1 : l1) {
+		if (e1->IsActive()) {
+			for (Entity* e2 : l2) {
+				if (e2->IsActive()) {
+					float distX = e1->GetPosition().x - e2->GetPosition().x;
+					float distY = e1->GetPosition().y - e2->GetPosition().y;
+					float distZ = e1->GetPosition().z - e2->GetPosition().z;
+
+					float distV = sqrt(pow(distX, 2) + pow(distY, 2) + pow(distZ, 2));
+					if (distV < (e1->GetRadius() + e2->GetRadius())) {
+						e1->Collides();
+						e2->Collides();
+					}
+				}
+			}
+		}
+	}
 }
 
 // --------------------------------------------------------

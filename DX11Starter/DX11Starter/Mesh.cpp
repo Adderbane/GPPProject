@@ -5,6 +5,7 @@ Mesh::Mesh(Vertex vertices[], int vertexCount, unsigned int indices[], int index
 	this->indexCount = indexCount;
 
 	CreateBuffers(vertices, vertexCount, indices, indexCount, device);
+	CalcSphere(vertices, vertexCount);
 }
 
 Mesh::Mesh(char* filename, ID3D11Device* device)
@@ -183,6 +184,7 @@ Mesh::Mesh(char* filename, ID3D11Device* device)
 	this->indexCount = vertCounter;
 
 	CreateBuffers(&verts[0], vertCounter, &indices[0], vertCounter, device);
+	CalcSphere(&verts[0], vertCounter);
 }
 
 Mesh::~Mesh()
@@ -204,6 +206,11 @@ ID3D11Buffer* Mesh::GetIndexBuffer()
 int Mesh::GetIndexCount()
 {
 	return indexCount;
+}
+
+float Mesh::GetRadius()
+{
+	return radius;
 }
 
 //Helpers
@@ -248,4 +255,29 @@ void Mesh::CreateBuffers(Vertex vertices[], int vertexCount, unsigned int indice
 	// Actually create the buffer with the initial data
 	// - Once we do this, we'll NEVER CHANGE THE BUFFER AGAIN
 	device->CreateBuffer(&ibd, &initialIndexData, &indexBuffer);
+}
+
+void Mesh::CalcSphere(Vertex verticies[], int vertexCount)
+{
+	float avgX = 0.0F;
+	float avgY = 0.0f;
+	float avgZ = 0.0f;
+	float divide = 1.0f / vertexCount;
+	float maxDist = 0.0f;
+
+	for (int i = 0; i < vertexCount; i++) {
+		avgX += (verticies[i].Position.x * divide);
+		avgY += (verticies[i].Position.y * divide);
+		avgZ += (verticies[i].Position.z * divide);
+	}
+
+	for (int i = 0; i < vertexCount; i++) {
+		float dist = sqrt(pow(verticies[i].Position.x - avgX, 2) + pow(verticies[i].Position.y - avgY, 2) + pow(verticies[i].Position.z - avgZ, 2));
+		
+		if (dist > maxDist) {
+			maxDist = dist;
+		}
+	}
+
+	radius = maxDist;
 }

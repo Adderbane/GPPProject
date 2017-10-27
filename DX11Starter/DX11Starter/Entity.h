@@ -31,6 +31,7 @@ public:
 	XMFLOAT3 GetScale();
 	Mesh* GetMesh();
 	Material* GetMaterial();
+	float GetRadius();
 
 	virtual void Update(float deltaTime, float totalTime);
 	virtual void Draw();
@@ -51,5 +52,10 @@ private:
 	bool isWorldValid;
 
 	void RecalcWorld();
+
+	// the radius of the mesh, the entity's scaled radius is created from this value
+	float masterRadius;
+	// the entity's radius
+	float radius;
 };
 

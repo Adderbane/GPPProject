@@ -41,7 +41,7 @@ void Bullet::Draw()
 
 void Bullet::Collides()
 {
-
+	this->SetActive(false);
 }
 
 void Bullet::Launch(float timeStamp)
