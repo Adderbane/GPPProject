@@ -10,6 +10,7 @@ Entity::Entity(Mesh* mesh, Material* material)
 	XMStoreFloat4x4(&world, XMMatrixTranspose(XMMatrixIdentity()));
 	isWorldValid = true;
 	this->active = false;
+	this->masterRadius = this->mesh->GetRadius();
 }
 
 Entity::~Entity()
@@ -43,6 +44,7 @@ void Entity::SetScale(float x, float y, float z)
 {
 	isWorldValid = false;
 	this->scale = XMFLOAT3(x, y, z);
+	this->radius = this->masterRadius * y;
 }
 
 //Manipulation
@@ -118,6 +120,11 @@ Material* Entity::GetMaterial()
 	return material;
 }
 
+float Entity::GetRadius()
+{
+	return radius;
+}
+
 void Entity::Update(float deltaTime, float totalTime)
 {
 	if (this->IsActive() != true)
@@ -136,7 +143,7 @@ void Entity::Draw()
 
 void Entity::Collides()
 {
-
+	this->SetActive(false);
 }
 
 //World calculation

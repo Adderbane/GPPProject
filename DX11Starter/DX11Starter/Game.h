@@ -28,6 +28,7 @@ public:
 	void Init();
 	void OnResize();
 	void Update(float deltaTime, float totalTime);
+	void CheckForCollisions(vector<Bullet*> l1, vector<Entity*> l2);
 	void Draw(float deltaTime, float totalTime);
 
 	// Overridden mouse input helper methods
