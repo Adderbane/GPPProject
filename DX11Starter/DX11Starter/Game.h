@@ -6,6 +6,7 @@
 #include "Mesh.h"
 #include "Material.h"
 #include "Entity.h"
+#include "Player.h"
 #include "Camera.h"
 #include "Lights.h"
 #include "TargetManager.h"
@@ -46,6 +47,7 @@ private:
 	vector<Entity*> entities;
 	FireManager* fireManager;
 	TargetManager* targetManager;
+	Player* player;
 
 	//Resource Collections
 	unordered_map<char*, Mesh*> meshes;
