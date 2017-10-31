@@ -245,7 +245,7 @@ void Game::Update(float deltaTime, float totalTime)
 		player->Move(0, -3 * deltaTime, 0);
 	}
 	//Update Camera
-	camera->SetPosition(player->GetPosition().x, player->GetPosition().y, player->GetPosition().z - 3);
+	camera->SetPosition(player->GetPosition().x / 4, player->GetPosition().y / 4, player->GetPosition().z - 4);
 	camera->Update(deltaTime, totalTime, player->GetPosition());
 
 	//Update Entities

@@ -20,12 +20,13 @@ Camera::~Camera()
 {
 }
 
-//Public mehtods
+//Public methods
 void Camera::Update(float deltaTime, float totalTime, XMFLOAT3 playerPosition)
 {
 	//Get direction
 	XMVECTOR rotation = XMQuaternionRotationRollPitchYaw(xRotation, yRotation, 0.0f);
-	XMVECTOR lookDir = XMLoadFloat3(&playerPosition) - XMLoadFloat3(&camPosition);
+	XMVECTOR lookDir = XMLoadFloat3(&playerPosition) -XMLoadFloat3(&camPosition);
+	
 	lookDir = XMVector3Normalize(lookDir);
 	XMVECTOR upDir = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
 
