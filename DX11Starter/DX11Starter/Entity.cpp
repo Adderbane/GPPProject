@@ -11,6 +11,7 @@ Entity::Entity(Mesh* mesh, Material* material)
 	isWorldValid = true;
 	this->active = false;
 	this->masterRadius = this->mesh->GetRadius();
+	this->radius = this->masterRadius;
 }
 
 Entity::~Entity()

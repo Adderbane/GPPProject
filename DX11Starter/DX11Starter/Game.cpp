@@ -24,6 +24,8 @@ Game::Game(HINSTANCE hInstance)
 {
 	//Initialize fields
 	camera = new Camera((float)width, (float)height, 0.25f * XM_PI, 0.01f, 100.0f);
+	camera->SetPosition(0, 0, -3);
+	//camera->SetRotation(0, 90);
 
 	XMStoreFloat4(&dirLight1.AmbientColor, XMVectorSet(+0.1f, +0.1f, +0.1f, 1.0f));
 	XMStoreFloat4(&dirLight1.DiffuseColor, XMVectorSet(+1.0f, +1.0f, +1.0f, 1.0f));
@@ -181,17 +183,19 @@ void Game::SetupGameWorld()
 		entities.push_back(e);
 	}
 
+	//Make player
+	player = new Player(meshes.find("cone")->second, materials.find("metal")->second);
+	//player->SetActive(true);
+	entities.push_back(player);
+
 	//Make fire control
 	fireManager = new FireManager(meshes.find("sphere")->second, materials.find("marble")->second);
 	for each (Bullet* b in fireManager->GetBullets())
 	{
 		entities.push_back(b);
+		b->Link(player);
 	}
 
-	//Make player
-	player = new Player(meshes.find("cone")->second, materials.find("metal")->second);
-	//player->SetActive(true);
-	entities.push_back(player);
 }
 
 
@@ -217,31 +221,32 @@ void Game::Update(float deltaTime, float totalTime)
 	if (GetAsyncKeyState(VK_ESCAPE))
 		Quit();
 
-	if (GetAsyncKeyState('K') & 0x8000)
+	if (GetAsyncKeyState(VK_SPACE) & 0x8000)
 	{
 		fireManager->Fire(deltaTime, totalTime, true);
 	}
 	else fireManager->Fire(deltaTime, totalTime, false);
 
 	//player control
-	if (GetAsyncKeyState(VK_LEFT)) {
+	if (GetAsyncKeyState(VK_LEFT) & 0x8000) {
 		//move left
 		player->Move(-3 * deltaTime, 0, 0);
 	}
-	if (GetAsyncKeyState(VK_RIGHT)) {
+	if (GetAsyncKeyState(VK_RIGHT) & 0x8000) {
 		//move right
 		player->Move(3 * deltaTime, 0, 0);
 	}
-	if (GetAsyncKeyState(VK_DOWN)) {
+	if (GetAsyncKeyState(VK_DOWN) & 0x8000) {
 		//move up (lean back)
 		player->Move(0, 3 * deltaTime, 0);
 	}
-	if (GetAsyncKeyState(VK_UP)) {
+	if (GetAsyncKeyState(VK_UP) & 0x8000) {
 		//move down (lean forward)
 		player->Move(0, -3 * deltaTime, 0);
 	}
 	//Update Camera
-	camera->Update(deltaTime, totalTime);
+	camera->SetPosition(player->GetPosition().x / 4, player->GetPosition().y / 4, player->GetPosition().z - 4);
+	camera->Update(deltaTime, totalTime, player->GetPosition());
 
 	//Update Entities
 	for each (Entity* e in entities)
@@ -264,8 +269,8 @@ void Game::CheckForCollisions(vector<Bullet*> l1, vector<Entity*> l2)
 					float distY = e1->GetPosition().y - e2->GetPosition().y;
 					float distZ = e1->GetPosition().z - e2->GetPosition().z;
 
-					float distV = sqrt(pow(distX, 2) + pow(distY, 2) + pow(distZ, 2));
-					if (distV < (e1->GetRadius() + e2->GetRadius())) {
+					float distV = pow(distX, 2) + pow(distY, 2) + pow(distZ, 2);
+					if (distV < pow((e1->GetRadius() + e2->GetRadius()), 2)) {
 						e1->Collides();
 						e2->Collides();
 					}

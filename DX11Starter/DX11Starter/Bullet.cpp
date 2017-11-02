@@ -1,8 +1,8 @@
 #include "Bullet.h"
 
 
-const float Bullet::speed = 5.0f;
-const float Bullet::range = 20.0f;
+const float Bullet::speed = 30.0f;
+const float Bullet::range = 50.0f;
 const float Bullet::lifetime = range / speed;
 
 Bullet::Bullet(Mesh* mesh, Material* material) : Entity(mesh, material)
@@ -44,9 +44,16 @@ void Bullet::Collides()
 	this->SetActive(false);
 }
 
+//Spawns the bullet and turns it on
 void Bullet::Launch(float timeStamp)
 {
-	this->SetPosition(0.0f, 0.0f, 0.0f);
+	this->SetPosition(player->GetPosition().x, player->GetPosition().y, player->GetPosition().z);
 	this->spawnTime = timeStamp;
 	this->SetActive(true);
+}
+
+//Gives the bullet a reference to the player so it knows where to spawn
+void Bullet::Link(Entity* player)
+{
+	this->player = player;
 }
