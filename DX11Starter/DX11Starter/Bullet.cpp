@@ -1,8 +1,8 @@
 #include "Bullet.h"
 
 
-const float Bullet::speed = 5.0f;
-const float Bullet::range = 20.0f;
+const float Bullet::speed = 30.0f;
+const float Bullet::range = 50.0f;
 const float Bullet::lifetime = range / speed;
 
 Bullet::Bullet(Mesh* mesh, Material* material) : Entity(mesh, material)

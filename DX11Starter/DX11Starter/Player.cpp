@@ -8,7 +8,7 @@ Player::Player(Mesh* mesh, Material* material) : Entity(mesh, material)
 	this->SetRotation(XM_PIDIV2, 0.0f, 0.0f);
 	decelRate = 0.5;
 	xCap = 4.0f;
-	yCap = 3.0f;
+	yCap = 2.0f;
 }
 
 
@@ -20,7 +20,7 @@ void Player::Update(float deltaTime, float totalTime)
 {
 	XMFLOAT3 pos = GetPosition();
 	Entity::Update(deltaTime, totalTime);
-	this->Move(0, 0, 1.0f * deltaTime);
+	this->Move(0, 0, 2.0f * deltaTime);
 	if (pos.x > xCap) {
 		pos.x = xCap;
 	}
