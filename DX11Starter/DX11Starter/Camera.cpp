@@ -27,7 +27,6 @@ void Camera::Update(float deltaTime, float totalTime)
 	XMVECTOR rotation = XMQuaternionRotationRollPitchYaw(xRotation, yRotation, 0.0f);
 	XMVECTOR lookDir = XMVector3Rotate(XMVectorSet(0.0f, 0.0f, 1.0f, 0.0f), rotation);
 	XMVECTOR upDir = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
-
 	XMVECTOR position = XMLoadFloat3(&camPosition);
 
 	//Apply camera movement

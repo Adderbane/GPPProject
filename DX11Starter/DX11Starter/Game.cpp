@@ -25,13 +25,9 @@ Game::Game(HINSTANCE hInstance)
 	//Initialize fields
 	camera = new Camera((float)width, (float)height, 0.25f * XM_PI, 0.01f, 100.0f);
 
-	XMStoreFloat4(&dirLight1.AmbientColor, XMVectorSet(+0.1f, +0.1f, +0.1f, 1.0f));
-	XMStoreFloat4(&dirLight1.DiffuseColor, XMVectorSet(+1.0f, +1.0f, +1.0f, 1.0f));
-	XMStoreFloat3(&dirLight1.Direction,    XMVectorSet(+1.0f, -1.0f, +1.0f, 0.0f));
-
-	XMStoreFloat4(&dirLight2.AmbientColor, XMVectorSet(+0.0f, +0.0f, +0.0f, 1.0f));
-	XMStoreFloat4(&dirLight2.DiffuseColor, XMVectorSet(+0.0f, +0.0f, +0.0f, 1.0f));
-	XMStoreFloat3(&dirLight2.Direction,    XMVectorSet(-1.0f, -1.0f, +1.0f, 0.0f));
+	XMStoreFloat4(&dirLight.AmbientColor, XMVectorSet(+0.1f, +0.1f, +0.1f, 1.0f));
+	XMStoreFloat4(&dirLight.DiffuseColor, XMVectorSet(+1.0f, +1.0f, +1.0f, 1.0f));
+	XMStoreFloat3(&dirLight.Direction,    XMVectorSet(+1.0f, -1.0f, +1.0f, 0.0f));
 
 	prevMousePos.x = width/2;
 	prevMousePos.y = height/2;
@@ -194,6 +190,13 @@ void Game::SetupGameWorld()
 		b->Link(player);
 	}
 
+	////Point Light Test
+	//PointLight p = PointLight();
+	//p.AmbientColor = XMFLOAT4(0.01f, 0.01f, 0.01f, 0.01f);
+	//p.DiffuseColor = XMFLOAT4(1.0f, 0.0f, 0.0f, 0.0f);
+	//p.Position = XMFLOAT3(2.0f, 0.0f, 0.0f);
+	//p.Radius = 0.25f;
+	//pointLights.push_back(p);
 }
 
 
@@ -327,8 +330,17 @@ void Game::Draw(float deltaTime, float totalTime)
 		vShader->SetMatrix4x4("projection", camera->GetProj());
 		vShader->SetMatrix4x4("normalWorld", entity->GetNormalWorld());
 
-		pShader->SetData("dirLight1", &dirLight1, sizeof(DirectionalLight));
-		pShader->SetData("dirLight2", &dirLight2, sizeof(DirectionalLight));
+		//Get array of PointLights
+		PointLight lightArray[32] = {};
+		for (size_t i = 0; i < pointLights.size(); i++)
+		{
+			lightArray[i] = pointLights[i];
+		}
+		int lightCount = (int) pointLights.size();
+
+		pShader->SetData("dirLight", &dirLight, sizeof(DirectionalLight));
+		pShader->SetData("lightList", &lightArray, sizeof(PointLight) * 32);
+		pShader->SetData("pointLightCount", &lightCount, sizeof(int));
 		pShader->SetData("cameraPosition", &(camera->GetCamPosition()), sizeof(XMFLOAT3));
 		pShader->SetShaderResourceView("diffuseTexture", entity->GetMaterial()->GetSRV());
 		pShader->SetSamplerState("basicSampler", entity->GetMaterial()->GetSampler());
