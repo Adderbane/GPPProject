@@ -9,7 +9,7 @@ public:
 	Bullet(Mesh* mesh, Material* material);
 	~Bullet();
 	void Update(float deltaTime, float totalTime) override;
-	void Draw() override;
+	//void Draw() override;
 	void Collides() override;
 
 	void Launch(float timeStamp);

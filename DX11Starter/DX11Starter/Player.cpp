@@ -37,9 +37,9 @@ void Player::Update(float deltaTime, float totalTime)
 	
 }
 
-void Player::Draw()
-{
-}
+//void Player::Draw()
+//{
+//}
 
 void Player::Collides()
 {

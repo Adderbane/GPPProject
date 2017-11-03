@@ -4,6 +4,8 @@
 #include <DirectXMath.h>
 #include "Mesh.h"
 #include "Material.h"
+#include "Camera.h"
+#include "LightManager.h"
 
 using namespace DirectX;
 
@@ -34,7 +36,7 @@ public:
 	float GetRadius();
 
 	virtual void Update(float deltaTime, float totalTime);
-	virtual void Draw();
+	virtual void Draw(ID3D11DeviceContext* context, Camera* camera, LightManager* lightManager);
 	virtual void Collides();
 private:
 

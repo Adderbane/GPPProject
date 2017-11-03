@@ -31,13 +31,13 @@ void Bullet::Update(float deltaTime, float totalTime)
 	this->Move(0.0f, 0.0f, speed * deltaTime);
 }
 
-void Bullet::Draw()
-{
-	if (this->IsActive() != true)
-	{
-		return;
-	}
-}
+//void Bullet::Draw()
+//{
+//	if (this->IsActive() != true)
+//	{
+//		return;
+//	}
+//}
 
 void Bullet::Collides()
 {

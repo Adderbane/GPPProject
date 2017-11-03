@@ -11,6 +11,7 @@
 #include "Lights.h"
 #include "TargetManager.h"
 #include "FireManager.h"
+#include "LightManager.h"
 #include "Bullet.h"
 #include <vector>
 
@@ -58,9 +59,8 @@ private:
 	//Camera object
 	Camera* camera;
 
-	//Light objects
-	DirectionalLight dirLight;
-	vector<PointLight> pointLights;
+	//Light manager
+	LightManager* lightManager;
 
 	// Keeps track of the old mouse position.  Useful for 
 	// determining how far the mouse moved in a single frame.

@@ -25,11 +25,13 @@ Game::Game(HINSTANCE hInstance)
 	//Initialize fields
 	camera = new Camera((float)width, (float)height, 0.25f * XM_PI, 0.01f, 100.0f);
 	camera->SetPosition(0, 0, -3);
-	//camera->SetRotation(0, 90);
 
-	XMStoreFloat4(&dirLight.AmbientColor, XMVectorSet(+0.1f, +0.1f, +0.1f, 1.0f));
-	XMStoreFloat4(&dirLight.DiffuseColor, XMVectorSet(+1.0f, +1.0f, +1.0f, 1.0f));
-	XMStoreFloat3(&dirLight.Direction,    XMVectorSet(+1.0f, -1.0f, +1.0f, 0.0f));
+	lightManager = new LightManager();
+	DirectionalLight d = DirectionalLight();
+	d.AmbientColor = XMFLOAT4(+0.1f, +0.1f, +0.1f, 1.0f);
+	d.DiffuseColor = XMFLOAT4(+1.0f, +1.0f, +1.0f, 1.0f);
+	d.Direction = XMFLOAT3(+1.0f, -1.0f, +1.0f);
+	lightManager->dirLight = d;
 
 	prevMousePos.x = width/2;
 	prevMousePos.y = height/2;
@@ -72,6 +74,7 @@ Game::~Game()
 
 	delete targetManager;
 	delete fireManager;
+	delete lightManager;
 
 	//Clean up camera
 	delete camera;
@@ -193,12 +196,12 @@ void Game::SetupGameWorld()
 	}
 
 	////Point Light Test
-	//PointLight p = PointLight();
-	//p.AmbientColor = XMFLOAT4(0.01f, 0.01f, 0.01f, 0.01f);
-	//p.DiffuseColor = XMFLOAT4(1.0f, 0.0f, 0.0f, 0.0f);
-	//p.Position = XMFLOAT3(2.0f, 0.0f, 0.0f);
-	//p.Radius = 0.25f;
-	//pointLights.push_back(p);
+	PointLight p = PointLight();
+	p.AmbientColor = XMFLOAT4(0.01f, 0.01f, 0.01f, 0.01f);
+	p.DiffuseColor = XMFLOAT4(1.0f, 0.0f, 0.0f, 0.0f);
+	p.Position = XMFLOAT3(2.0f, 0.0f, 0.0f);
+	p.Radius = 0.25f;
+	lightManager->pointLights.push_back(p);
 }
 
 
@@ -304,73 +307,7 @@ void Game::Draw(float deltaTime, float totalTime)
 	//Draw all entities
 	for (size_t i = 0; i < entities.size(); i++)
 	{
-		Entity* entity = entities[i];
-
-		//Skip drawing if entity is not active
-		if (entity->IsActive() != true)
-		{
-			continue;
-		}
-
-		Mesh* mesh = entity->GetMesh();
-		SimpleVertexShader* vShader = entity->GetMaterial()->GetVertexShader();
-		SimplePixelShader* pShader = entity->GetMaterial()->GetPixelShader();
-
-		// Set the vertex and pixel shaders to use for the next Draw() command
-		//  - These don't technically need to be set every frame...YET
-		//  - Once you start applying different shaders to different objects,
-		//    you'll need to swap the current shaders before each draw
-		vShader->SetShader();
-		pShader->SetShader();
-
-		// Send data to shader variables
-		//  - Do this ONCE PER OBJECT you're drawing
-		//  - This is actually a complex process of copying data to a local buffer
-		//    and then copying that entire buffer to the GPU.  
-		//  - The "SimpleShader" class handles all of that for you.
-		vShader->SetMatrix4x4("world", entity->GetWorld());
-		vShader->SetMatrix4x4("view", camera->GetView());
-		vShader->SetMatrix4x4("projection", camera->GetProj());
-		vShader->SetMatrix4x4("normalWorld", entity->GetNormalWorld());
-
-		//Get array of PointLights
-		PointLight lightArray[32] = {};
-		for (size_t i = 0; i < pointLights.size(); i++)
-		{
-			lightArray[i] = pointLights[i];
-		}
-		int lightCount = (int) pointLights.size();
-
-		pShader->SetData("dirLight", &dirLight, sizeof(DirectionalLight));
-		pShader->SetData("lightList", &lightArray, sizeof(PointLight) * 32);
-		pShader->SetData("pointLightCount", &lightCount, sizeof(int));
-		pShader->SetData("cameraPosition", &(camera->GetCamPosition()), sizeof(XMFLOAT3));
-		pShader->SetShaderResourceView("diffuseTexture", entity->GetMaterial()->GetSRV());
-		pShader->SetSamplerState("basicSampler", entity->GetMaterial()->GetSampler());
-
-		// Once you've set all of the data you care to change for
-		// the next draw call, you need to actually send it to the GPU
-		//  - If you skip this, the "SetMatrix" calls above won't make it to the GPU!
-		vShader->CopyAllBufferData();
-		pShader->CopyAllBufferData();
-
-		// Set buffers in the input assembler
-		//  - Do this ONCE PER OBJECT you're drawing, since each object might
-		//    have different geometry.
-		UINT stride = sizeof(Vertex);
-		UINT offset = 0;
-		context->IASetVertexBuffers(0, 1, mesh->GetVertexBuffer(), &stride, &offset);
-		context->IASetIndexBuffer(mesh->GetIndexBuffer(), DXGI_FORMAT_R32_UINT, 0);
-
-		// Finally do the actual drawing
-		//  - Do this ONCE PER OBJECT you intend to draw
-		//  - This will use all of the currently set DirectX "stuff" (shaders, buffers, etc)
-		//  - DrawIndexed() uses the currently set INDEX BUFFER to look up corresponding
-		//     vertices in the currently set VERTEX BUFFER
-		context->DrawIndexed(
-			mesh->GetIndexCount(),     // The number of indices to use (we could draw a subset if we wanted)
-			0,     // Offset to the first index we want to use
-			0);    // Offset to add to each index when looking up vertices
+		entities[i]->Draw(context, camera, lightManager);
 	}
 
 

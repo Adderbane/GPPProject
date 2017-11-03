@@ -134,12 +134,72 @@ void Entity::Update(float deltaTime, float totalTime)
 	}
 }
 
-void Entity::Draw()
+void Entity::Draw(ID3D11DeviceContext* context, Camera* camera, LightManager* lightManager)
 {
 	if (this->IsActive() != true)
 	{
 		return;
 	}
+
+	//Get array of PointLights
+	PointLight lightArray[32] = {};
+	for (size_t i = 0; i < lightManager->pointLights.size(); i++)
+	{
+		lightArray[i] = lightManager->pointLights[i];
+	}
+	int lightCount = (int)lightManager->pointLights.size();
+
+
+	SimpleVertexShader* vShader = material->GetVertexShader();
+	SimplePixelShader* pShader = material->GetPixelShader();
+
+	// Set the vertex and pixel shaders to use for the next Draw() command
+	//  - These don't technically need to be set every frame...YET
+	//  - Once you start applying different shaders to different objects,
+	//    you'll need to swap the current shaders before each draw
+	vShader->SetShader();
+	pShader->SetShader();
+
+	// Send data to shader variables
+	//  - Do this ONCE PER OBJECT you're drawing
+	//  - This is actually a complex process of copying data to a local buffer
+	//    and then copying that entire buffer to the GPU.  
+	//  - The "SimpleShader" class handles all of that for you.
+	vShader->SetMatrix4x4("world", GetWorld());
+	vShader->SetMatrix4x4("view", camera->GetView());
+	vShader->SetMatrix4x4("projection", camera->GetProj());
+	vShader->SetMatrix4x4("normalWorld", GetNormalWorld());
+
+	pShader->SetData("dirLight", &(lightManager->dirLight), sizeof(DirectionalLight));
+	pShader->SetData("lightList", &lightArray, sizeof(PointLight) * 32);
+	pShader->SetData("pointLightCount", &lightCount, sizeof(int));
+	pShader->SetData("cameraPosition", &(camera->GetCamPosition()), sizeof(XMFLOAT3));
+	pShader->SetShaderResourceView("diffuseTexture", material->GetSRV());
+	pShader->SetSamplerState("basicSampler", material->GetSampler());
+
+	// Once you've set all of the data you care to change for
+	// the next draw call, you need to actually send it to the GPU
+	//  - If you skip this, the "SetMatrix" calls above won't make it to the GPU!
+	vShader->CopyAllBufferData();
+	pShader->CopyAllBufferData();
+
+	// Set buffers in the input assembler
+	//  - Do this ONCE PER OBJECT you're drawing, since each object might
+	//    have different geometry.
+	UINT stride = sizeof(Vertex);
+	UINT offset = 0;
+	context->IASetVertexBuffers(0, 1, mesh->GetVertexBuffer(), &stride, &offset);
+	context->IASetIndexBuffer(mesh->GetIndexBuffer(), DXGI_FORMAT_R32_UINT, 0);
+
+	// Finally do the actual drawing
+	//  - Do this ONCE PER OBJECT you intend to draw
+	//  - This will use all of the currently set DirectX "stuff" (shaders, buffers, etc)
+	//  - DrawIndexed() uses the currently set INDEX BUFFER to look up corresponding
+	//     vertices in the currently set VERTEX BUFFER
+	context->DrawIndexed(
+		mesh->GetIndexCount(),     // The number of indices to use (we could draw a subset if we wanted)
+		0,     // Offset to the first index we want to use
+		0);    // Offset to add to each index when looking up vertices
 }
 
 void Entity::Collides()
