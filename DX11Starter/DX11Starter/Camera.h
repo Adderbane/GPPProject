@@ -12,9 +12,11 @@ public:
 	Camera(float width, float height, float fov, float nearClip, float farClip);
 	~Camera();
 
-	void Update(float deltaTime, float totalTime);
+	void Update(float deltaTime, float totalTime, XMFLOAT3 playerPosition);
 	void Rotate(float dx, float dy);
 	void Resize(float width, float height);
+	void SetPosition(float x, float y, float z);
+	void SetRotation(float x, float y);
 
 	XMFLOAT4X4 GetView();
 	XMFLOAT4X4 GetProj();

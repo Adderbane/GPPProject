@@ -24,6 +24,8 @@ Game::Game(HINSTANCE hInstance)
 {
 	//Initialize fields
 	camera = new Camera((float)width, (float)height, 0.25f * XM_PI, 0.01f, 100.0f);
+	camera->SetPosition(0, 0, -3);
+	//camera->SetRotation(0, 90);
 
 	XMStoreFloat4(&dirLight.AmbientColor, XMVectorSet(+0.1f, +0.1f, +0.1f, 1.0f));
 	XMStoreFloat4(&dirLight.DiffuseColor, XMVectorSet(+1.0f, +1.0f, +1.0f, 1.0f));
@@ -246,7 +248,8 @@ void Game::Update(float deltaTime, float totalTime)
 		player->Move(0, -3 * deltaTime, 0);
 	}
 	//Update Camera
-	camera->Update(deltaTime, totalTime);
+	camera->SetPosition(player->GetPosition().x / 4, player->GetPosition().y / 4, player->GetPosition().z - 4);
+	camera->Update(deltaTime, totalTime, player->GetPosition());
 
 	//Update Entities
 	for each (Entity* e in entities)

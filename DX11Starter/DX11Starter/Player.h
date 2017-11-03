@@ -15,5 +15,7 @@ private:
 	XMFLOAT3 velocity;
 	XMFLOAT3 accel;
 	float decelRate;
+	float xCap;
+	float yCap;
 };
 

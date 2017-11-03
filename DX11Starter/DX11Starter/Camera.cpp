@@ -20,12 +20,16 @@ Camera::~Camera()
 {
 }
 
-//Public mehtods
-void Camera::Update(float deltaTime, float totalTime)
+//Public methods
+void Camera::Update(float deltaTime, float totalTime, XMFLOAT3 playerPosition)
 {
 	//Get direction
 	XMVECTOR rotation = XMQuaternionRotationRollPitchYaw(xRotation, yRotation, 0.0f);
-	XMVECTOR lookDir = XMVector3Rotate(XMVectorSet(0.0f, 0.0f, 1.0f, 0.0f), rotation);
+	XMVECTOR camInPlayerPlane = XMLoadFloat3(&camPosition);
+	camInPlayerPlane = XMVectorAdd(camInPlayerPlane, XMVectorSet(0.0f, 0.0f, 4.0f, 0.0f));
+	XMVECTOR playerDirection = XMLoadFloat3(&playerPosition) - camInPlayerPlane;
+	
+	XMVECTOR lookDir = XMVector4Normalize(XMVectorAdd(XMVectorScale(playerDirection, 0.2), camInPlayerPlane) - XMLoadFloat3(&camPosition));
 	XMVECTOR upDir = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
 	XMVECTOR position = XMLoadFloat3(&camPosition);
 
@@ -54,6 +58,8 @@ void Camera::Update(float deltaTime, float totalTime)
 	{
 		position = XMVectorAdd(position, -1.0f * upDir * speed * deltaTime);
 	}
+
+	//Move camera forward
 	
 	//Get view matrix
 	XMMATRIX view = XMMatrixLookToLH(position, lookDir, upDir);
@@ -95,6 +101,17 @@ void Camera::Resize(float width, float height)
 	this->height = height;
 
 	RecalcProj();
+}
+
+void Camera::SetPosition(float x, float y, float z)
+{
+	camPosition = XMFLOAT3(x, y, z);
+}
+
+void Camera::SetRotation(float x, float y)
+{
+	xRotation = x;
+	yRotation = y;
 }
 
 //Getters
