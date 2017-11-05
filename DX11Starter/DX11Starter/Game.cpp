@@ -133,9 +133,13 @@ void Game::LoadResources()
 	ID3D11ShaderResourceView* wood = 0;
 	ID3D11ShaderResourceView* metal = 0;
 	ID3D11ShaderResourceView* marble = 0;
+	ID3D11ShaderResourceView* playerTex = 0;
+	ID3D11ShaderResourceView* enemy1 = 0;
 	CreateWICTextureFromFile(device, context, L"Assets/Textures/WoodFine0074.jpg", 0, &wood);
 	CreateWICTextureFromFile(device, context, L"Assets/Textures/BronzeCopper0011.jpg", 0, &metal);
 	CreateWICTextureFromFile(device, context, L"Assets/Textures/MarbleVeined0062.jpg", 0, &marble);
+	CreateWICTextureFromFile(device, context, L"Assets/Textures/SharpClaw Racer.png", 0, &playerTex);
+	CreateWICTextureFromFile(device, context, L"Assets/Textures/Enemy.png", 0, &enemy1);
 
 	//Create sampler state
 	ID3D11SamplerState* sampler;
@@ -156,11 +160,16 @@ void Game::LoadResources()
 	materials.insert(pair<char*, Material*>("wood", new Material(vertexShaders.find("basicVertexShader")->second, pixelShaders.find("basicPixelShader")->second, wood, sampler)));
 	materials.insert(pair<char*, Material*>("metal", new Material(vertexShaders.find("basicVertexShader")->second, pixelShaders.find("basicPixelShader")->second, metal, sampler)));
 	materials.insert(pair<char*, Material*>("marble", new Material(vertexShaders.find("basicVertexShader")->second, pixelShaders.find("basicPixelShader")->second, marble, sampler)));
+	materials.insert(pair<char*, Material*>("playerTex", new Material(vertexShaders.find("basicVertexShader")->second, pixelShaders.find("basicPixelShader")->second, playerTex, sampler)));
+	materials.insert(pair<char*, Material*>("enemy1", new Material(vertexShaders.find("basicVertexShader")->second, pixelShaders.find("basicPixelShader")->second, enemy1, sampler)));
+
 
 	//Release DirX stuff (references are added in each material)
 	wood->Release();
 	metal->Release();
 	marble->Release();
+	playerTex->Release();
+	enemy1->Release();
 	sampler->Release();
 
 	//Load Models
@@ -169,6 +178,8 @@ void Game::LoadResources()
 	meshes.insert(pair<char*, Mesh*>("cylinder", new Mesh("Assets/Models/cylinder.obj", device)));
 	meshes.insert(pair<char*, Mesh*>("helix", new Mesh("Assets/Models/helix.obj", device)));
 	meshes.insert(pair<char*, Mesh*>("sphere", new Mesh("Assets/Models/sphere.obj", device)));
+	meshes.insert(pair<char*, Mesh*>("player", new Mesh("Assets/Models/SharpClaw Racer.obj", device)));
+	meshes.insert(pair<char*, Mesh*>("enemy1", new Mesh("Assets/Models/Enemy.obj", device)));
 }
 
 // --------------------------------------------------------
@@ -177,14 +188,14 @@ void Game::LoadResources()
 void Game::SetupGameWorld()
 {
 	//Make target field
-	targetManager = new TargetManager(meshes.find("cube")->second, materials.find("metal")->second);
+	targetManager = new TargetManager(meshes.find("enemy1")->second, materials.find("enemy1")->second);
 	for each (Entity* e in targetManager->GetTargets())
 	{
 		entities.push_back(e);
 	}
 
 	//Make player
-	player = new Player(meshes.find("cone")->second, materials.find("metal")->second);
+	player = new Player(meshes.find("player")->second, materials.find("playerTex")->second);
 	//player->SetActive(true);
 	entities.push_back(player);
 
