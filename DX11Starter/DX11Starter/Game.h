@@ -13,6 +13,7 @@
 #include "FireManager.h"
 #include "LightManager.h"
 #include "Bullet.h"
+#include "Skybox.h"
 #include <vector>
 
 using namespace std;
@@ -32,6 +33,7 @@ public:
 	void Update(float deltaTime, float totalTime);
 	void CheckForCollisions(vector<Bullet*> l1, vector<Entity*> l2);
 	void Draw(float deltaTime, float totalTime);
+	void DrawSkybox(Skybox* sky);
 
 	// Overridden mouse input helper methods
 	void OnMouseDown (WPARAM buttonState, int x, int y);
@@ -48,7 +50,9 @@ private:
 	vector<Entity*> entities;
 	FireManager* fireManager;
 	TargetManager* targetManager;
+	LightManager* lightManager;
 	Player* player;
+	Skybox* skybox;
 
 	//Resource Collections
 	unordered_map<char*, Mesh*> meshes;
@@ -58,9 +62,6 @@ private:
 
 	//Camera object
 	Camera* camera;
-
-	//Light manager
-	LightManager* lightManager;
 
 	// Keeps track of the old mouse position.  Useful for 
 	// determining how far the mouse moved in a single frame.
