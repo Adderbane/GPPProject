@@ -5,9 +5,19 @@
 
 using namespace DirectX;
 
-struct DirectionalLight
+struct Light
 {
 	XMFLOAT4 AmbientColor;
 	XMFLOAT4 DiffuseColor;
+};
+
+struct DirectionalLight : Light
+{
 	XMFLOAT3 Direction;
+};
+
+struct PointLight : Light
+{
+	XMFLOAT3 Position;
+	float Radius;
 };

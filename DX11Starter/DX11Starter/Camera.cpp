@@ -31,36 +31,7 @@ void Camera::Update(float deltaTime, float totalTime, XMFLOAT3 playerPosition)
 	
 	XMVECTOR lookDir = XMVector4Normalize(XMVectorAdd(XMVectorScale(playerDirection, 0.2), camInPlayerPlane) - XMLoadFloat3(&camPosition));
 	XMVECTOR upDir = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
-
 	XMVECTOR position = XMLoadFloat3(&camPosition);
-
-	//Apply camera movement
-	if (GetAsyncKeyState('W') & 0x8000)
-	{
-		position = XMVectorAdd(position, lookDir * speed * deltaTime);
-	}
-	if (GetAsyncKeyState('S') & 0x8000)
-	{
-		position = XMVectorAdd(position, -1.0f * lookDir * speed * deltaTime);
-	}
-	if (GetAsyncKeyState('A') & 0x8000)
-	{
-		position = XMVectorAdd(position, XMVector3Cross(lookDir, upDir) * speed * deltaTime);
-	}
-	if (GetAsyncKeyState('D') & 0x8000)
-	{
-		position = XMVectorAdd(position, -1.0f * XMVector3Cross(lookDir, upDir) * speed * deltaTime);
-	}
-	if (GetAsyncKeyState('Z') & 0x8000)
-	{
-		position = XMVectorAdd(position, upDir * speed * deltaTime);
-	}
-	if (GetAsyncKeyState('X') & 0x8000)
-	{
-		position = XMVectorAdd(position, -1.0f * upDir * speed * deltaTime);
-	}
-
-	//Move camera forward
 	
 	//Get view matrix
 	XMMATRIX view = XMMatrixLookToLH(position, lookDir, upDir);

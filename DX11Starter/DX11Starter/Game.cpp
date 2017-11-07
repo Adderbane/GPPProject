@@ -1,6 +1,7 @@
 #include "Game.h"
 #include "Vertex.h"
 #include "WICTextureLoader.h"
+#include "DDSTextureLoader.h"
 #include <math.h>
 
 // For the DirectX Math library
@@ -25,15 +26,15 @@ Game::Game(HINSTANCE hInstance)
 	//Initialize fields
 	camera = new Camera((float)width, (float)height, 0.25f * XM_PI, 0.01f, 100.0f);
 	camera->SetPosition(0, 0, -3);
-	//camera->SetRotation(0, 90);
 
-	XMStoreFloat4(&dirLight1.AmbientColor, XMVectorSet(+0.1f, +0.1f, +0.1f, 1.0f));
-	XMStoreFloat4(&dirLight1.DiffuseColor, XMVectorSet(+1.0f, +1.0f, +1.0f, 1.0f));
-	XMStoreFloat3(&dirLight1.Direction,    XMVectorSet(+1.0f, -1.0f, +1.0f, 0.0f));
+	lightManager = new LightManager();
+	DirectionalLight d = DirectionalLight();
+	d.AmbientColor = XMFLOAT4(+0.1f, +0.1f, +0.1f, 1.0f);
+	d.DiffuseColor = XMFLOAT4(+1.0f, +1.0f, +1.0f, 1.0f);
+	d.Direction = XMFLOAT3(+1.0f, -1.0f, +1.0f);
+	lightManager->dirLight = d;
 
-	XMStoreFloat4(&dirLight2.AmbientColor, XMVectorSet(+0.0f, +0.0f, +0.0f, 1.0f));
-	XMStoreFloat4(&dirLight2.DiffuseColor, XMVectorSet(+0.0f, +0.0f, +0.0f, 1.0f));
-	XMStoreFloat3(&dirLight2.Direction,    XMVectorSet(-1.0f, -1.0f, +1.0f, 0.0f));
+	skybox = new Skybox();
 
 	prevMousePos.x = width/2;
 	prevMousePos.y = height/2;
@@ -76,6 +77,11 @@ Game::~Game()
 
 	delete targetManager;
 	delete fireManager;
+	delete lightManager;
+
+	skybox->depthState->Release();
+	skybox->rasterState->Release();
+	delete skybox;
 
 	//Clean up camera
 	delete camera;
@@ -121,6 +127,7 @@ void Game::Init()
 // --------------------------------------------------------
 void Game::LoadResources()
 {
+	//Load Shaders
 	SimpleVertexShader* vertexShader = new SimpleVertexShader(device, context);
 	vertexShader->LoadShaderFile(L"VertexShader.cso");
 	vertexShaders.insert(pair<char*, SimpleVertexShader*>("basicVertexShader", vertexShader));
@@ -128,6 +135,15 @@ void Game::LoadResources()
 	SimplePixelShader* pixelShader = new SimplePixelShader(device, context);
 	pixelShader->LoadShaderFile(L"PixelShader.cso");
 	pixelShaders.insert(pair<char*, SimplePixelShader*>("basicPixelShader", pixelShader));
+
+	SimpleVertexShader* skyboxVS = new SimpleVertexShader(device, context);
+	skyboxVS->LoadShaderFile(L"SkyboxVS.cso");
+	vertexShaders.insert(pair<char*, SimpleVertexShader*>("skyboxVS", skyboxVS));
+
+	SimplePixelShader* skyboxPS = new SimplePixelShader(device, context);
+	skyboxPS->LoadShaderFile(L"SkyboxPS.cso");
+	pixelShaders.insert(pair<char*, SimplePixelShader*>("skyboxPS", skyboxPS));
+
 
 	//Load textures
 	ID3D11ShaderResourceView* wood = 0;
@@ -140,6 +156,9 @@ void Game::LoadResources()
 	CreateWICTextureFromFile(device, context, L"Assets/Textures/MarbleVeined0062.jpg", 0, &marble);
 	CreateWICTextureFromFile(device, context, L"Assets/Textures/SharpClaw Racer.png", 0, &playerTex);
 	CreateWICTextureFromFile(device, context, L"Assets/Textures/Enemy.png", 0, &enemy1);
+
+	ID3D11ShaderResourceView* sky = 0;
+	CreateDDSTextureFromFile(device, L"Assets/Textures/SunnyCubeMap.dds", 0, &sky);
 
 	//Create sampler state
 	ID3D11SamplerState* sampler;
@@ -162,7 +181,7 @@ void Game::LoadResources()
 	materials.insert(pair<char*, Material*>("marble", new Material(vertexShaders.find("basicVertexShader")->second, pixelShaders.find("basicPixelShader")->second, marble, sampler)));
 	materials.insert(pair<char*, Material*>("playerTex", new Material(vertexShaders.find("basicVertexShader")->second, pixelShaders.find("basicPixelShader")->second, playerTex, sampler)));
 	materials.insert(pair<char*, Material*>("enemy1", new Material(vertexShaders.find("basicVertexShader")->second, pixelShaders.find("basicPixelShader")->second, enemy1, sampler)));
-
+	materials.insert(pair<char*, Material*>("sky", new Material(vertexShaders.find("skyboxVS")->second, pixelShaders.find("skyboxPS")->second, sky, sampler)));
 
 	//Release DirX stuff (references are added in each material)
 	wood->Release();
@@ -170,6 +189,7 @@ void Game::LoadResources()
 	marble->Release();
 	playerTex->Release();
 	enemy1->Release();
+	sky->Release();
 	sampler->Release();
 
 	//Load Models
@@ -195,8 +215,7 @@ void Game::SetupGameWorld()
 	}
 
 	//Make player
-	player = new Player(meshes.find("player")->second, materials.find("playerTex")->second);
-	//player->SetActive(true);
+	player = new Player(meshes.find("cone")->second, materials.find("metal")->second);
 	entities.push_back(player);
 
 	//Make fire control
@@ -207,6 +226,29 @@ void Game::SetupGameWorld()
 		b->Link(player);
 	}
 
+	//Create Skybox
+	skybox->mesh = meshes.find("cube")->second;
+	skybox->material = materials.find("sky")->second;
+
+	D3D11_RASTERIZER_DESC rd = {};
+	rd.CullMode = D3D11_CULL_FRONT;
+	rd.FillMode = D3D11_FILL_SOLID;
+	rd.DepthClipEnable = true;
+	device->CreateRasterizerState(&rd, &(skybox->rasterState));
+
+	D3D11_DEPTH_STENCIL_DESC ds = {};
+	ds.DepthEnable = true;
+	ds.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
+	ds.DepthFunc = D3D11_COMPARISON_LESS_EQUAL;
+	device->CreateDepthStencilState(&ds, &(skybox->depthState));
+
+	////Point Light Test
+	PointLight p = PointLight();
+	p.AmbientColor = XMFLOAT4(0.01f, 0.01f, 0.01f, 0.01f);
+	p.DiffuseColor = XMFLOAT4(1.0f, 0.0f, 0.0f, 0.0f);
+	p.Position = XMFLOAT3(2.0f, 0.0f, 0.0f);
+	p.Radius = 0.25f;
+	lightManager->pointLights.push_back(p);
 }
 
 
@@ -265,7 +307,7 @@ void Game::Update(float deltaTime, float totalTime)
 		e->Update(deltaTime, totalTime);
 	}
 
-
+	//Collision detection
 	CheckForCollisions(fireManager->GetBullets(), targetManager->GetTargets());
   
 }
@@ -312,71 +354,56 @@ void Game::Draw(float deltaTime, float totalTime)
 	//Draw all entities
 	for (size_t i = 0; i < entities.size(); i++)
 	{
-		Entity* entity = entities[i];
-
-		//Skip drawing if entity is not active
-		if (entity->IsActive() != true)
-		{
-			continue;
-		}
-
-		Mesh* mesh = entity->GetMesh();
-		SimpleVertexShader* vShader = entity->GetMaterial()->GetVertexShader();
-		SimplePixelShader* pShader = entity->GetMaterial()->GetPixelShader();
-
-		// Set the vertex and pixel shaders to use for the next Draw() command
-		//  - These don't technically need to be set every frame...YET
-		//  - Once you start applying different shaders to different objects,
-		//    you'll need to swap the current shaders before each draw
-		vShader->SetShader();
-		pShader->SetShader();
-
-		// Send data to shader variables
-		//  - Do this ONCE PER OBJECT you're drawing
-		//  - This is actually a complex process of copying data to a local buffer
-		//    and then copying that entire buffer to the GPU.  
-		//  - The "SimpleShader" class handles all of that for you.
-		vShader->SetMatrix4x4("world", entity->GetWorld());
-		vShader->SetMatrix4x4("view", camera->GetView());
-		vShader->SetMatrix4x4("projection", camera->GetProj());
-		vShader->SetMatrix4x4("normalWorld", entity->GetNormalWorld());
-
-		pShader->SetData("dirLight1", &dirLight1, sizeof(DirectionalLight));
-		pShader->SetData("dirLight2", &dirLight2, sizeof(DirectionalLight));
-		pShader->SetData("cameraPosition", &(camera->GetCamPosition()), sizeof(XMFLOAT3));
-		pShader->SetShaderResourceView("diffuseTexture", entity->GetMaterial()->GetSRV());
-		pShader->SetSamplerState("basicSampler", entity->GetMaterial()->GetSampler());
-
-		// Once you've set all of the data you care to change for
-		// the next draw call, you need to actually send it to the GPU
-		//  - If you skip this, the "SetMatrix" calls above won't make it to the GPU!
-		vShader->CopyAllBufferData();
-		pShader->CopyAllBufferData();
-
-		// Set buffers in the input assembler
-		//  - Do this ONCE PER OBJECT you're drawing, since each object might
-		//    have different geometry.
-		UINT stride = sizeof(Vertex);
-		UINT offset = 0;
-		context->IASetVertexBuffers(0, 1, mesh->GetVertexBuffer(), &stride, &offset);
-		context->IASetIndexBuffer(mesh->GetIndexBuffer(), DXGI_FORMAT_R32_UINT, 0);
-
-		// Finally do the actual drawing
-		//  - Do this ONCE PER OBJECT you intend to draw
-		//  - This will use all of the currently set DirectX "stuff" (shaders, buffers, etc)
-		//  - DrawIndexed() uses the currently set INDEX BUFFER to look up corresponding
-		//     vertices in the currently set VERTEX BUFFER
-		context->DrawIndexed(
-			mesh->GetIndexCount(),     // The number of indices to use (we could draw a subset if we wanted)
-			0,     // Offset to the first index we want to use
-			0);    // Offset to add to each index when looking up vertices
+		entities[i]->Draw(context, camera, lightManager);
 	}
 
+	//Draw Skybox last
+	DrawSkybox(skybox);
 
 	// Present the back buffer to the user
 	//  - Puts the final frame we're drawing into the window so the user can see it
 	//  - Do this exactly ONCE PER FRAME (always at the very end of the frame)
 	swapChain->Present(0, 0);
+}
+
+void Game::DrawSkybox(Skybox* sky)
+{
+	Material* material = sky->material;
+	Mesh* mesh = sky->mesh;
+	SimpleVertexShader* vShader = material->GetVertexShader();
+	SimplePixelShader* pShader = material->GetPixelShader();
+
+	//Set Shaders
+	vShader->SetShader();
+	pShader->SetShader();
+
+	//Set Shader variables
+	vShader->SetMatrix4x4("view", camera->GetView());
+	vShader->SetMatrix4x4("projection", camera->GetProj());
+	
+	pShader->SetShaderResourceView("skyboxTexture", material->GetSRV());
+	pShader->SetSamplerState("basicSampler", material->GetSampler());
+
+	//Copy data
+	vShader->CopyAllBufferData();
+	pShader->CopyAllBufferData();
+
+	//Set vertex and index buffers
+	UINT stride = sizeof(Vertex);
+	UINT offset = 0;
+	context->IASetVertexBuffers(0, 1, mesh->GetVertexBuffer(), &stride, &offset);
+	context->IASetIndexBuffer(mesh->GetIndexBuffer(), DXGI_FORMAT_R32_UINT, 0);
+
+	//Set rasterizer and depth states
+	context->RSSetState(sky->rasterState);
+	context->OMSetDepthStencilState(sky->depthState, 0);
+
+	//DRAW!
+	context->DrawIndexed(mesh->GetIndexCount(), 0, 0);
+
+	//Reset states
+	context->RSSetState(0);
+	context->OMSetDepthStencilState(0, 0);
 }
 
 

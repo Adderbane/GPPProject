@@ -257,6 +257,7 @@ void Mesh::CreateBuffers(Vertex vertices[], int vertexCount, unsigned int indice
 	device->CreateBuffer(&ibd, &initialIndexData, &indexBuffer);
 }
 
+//Generate a bounding sphere from mesh
 void Mesh::CalcSphere(Vertex verticies[], int vertexCount)
 {
 	float avgX = 0.0F;
@@ -272,12 +273,12 @@ void Mesh::CalcSphere(Vertex verticies[], int vertexCount)
 	}
 
 	for (int i = 0; i < vertexCount; i++) {
-		float dist = sqrt(pow(verticies[i].Position.x - avgX, 2) + pow(verticies[i].Position.y - avgY, 2) + pow(verticies[i].Position.z - avgZ, 2));
+		float dist = pow(verticies[i].Position.x - avgX, 2) + pow(verticies[i].Position.y - avgY, 2) + pow(verticies[i].Position.z - avgZ, 2);
 		
 		if (dist > maxDist) {
 			maxDist = dist;
 		}
 	}
 
-	radius = maxDist;
+	radius = sqrt(maxDist);
 }

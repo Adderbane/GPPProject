@@ -72,6 +72,7 @@ sysinfo.txt
 [Rr]eleases/
 
 x64/
+!x64/Debug/Assets/
 
 x86/
 

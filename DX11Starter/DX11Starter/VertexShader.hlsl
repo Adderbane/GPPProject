@@ -45,6 +45,7 @@ struct VertexToPixel
 	float4 position		: SV_POSITION;	// XYZW position (System Value Position)
 	float3 normal       : NORMAL;
 	float2 uv           : TEXTCOORD;
+	float4 worldPos		: POSITION;
 };
 
 // --------------------------------------------------------
@@ -73,6 +74,8 @@ VertexToPixel main( VertexShaderInput input )
 	//
 	// The result is essentially the position (XY) of the vertex on our 2D 
 	// screen and the distance (Z) from the camera (the "depth" of the pixel)
+	// Also copy coordinate in worldspace for lighting calculations
+	output.worldPos = mul(float4(input.position, 1.0f), world);
 	output.position = mul(float4(input.position, 1.0f), worldViewProj);
 
 	//Copy normal

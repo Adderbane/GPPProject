@@ -14,12 +14,20 @@ struct VertexToPixel
 	float4 position		: SV_POSITION;
 	float3 normal       : NORMAL;
 	float2 uv           : TEXTCOORD;
+	float3 worldPos     : POSITION;
 };
 
 struct DirectionalLight {
 	float4 ambientColor;
 	float4 diffuseColor;
 	float3 direction;
+};
+
+struct PointLight {
+	float4 ambientColor;
+	float4 diffuseColor;
+	float3 position;
+	float  radius;
 };
 
 // Constant Buffer
@@ -30,8 +38,9 @@ struct DirectionalLight {
 // - The name of the cbuffer itself is unimportant
 cbuffer externalData : register(b0)
 {
-	DirectionalLight dirLight1;
-	DirectionalLight dirLight2;
+	DirectionalLight dirLight;
+	PointLight lightList[32];
+	int pointLightCount;
 	float4 cameraPosition;
 };
 
@@ -47,6 +56,16 @@ float4 calcDirLight(DirectionalLight light, float3 normal)
 	return (light.diffuseColor * nDotL) + light.ambientColor;
 }
 
+float4 calcPointLight(PointLight light, float3 position, float3 normal)
+{
+	float3 lightDist = light.position - position;
+	float3 lightNormDir = normalize(lightDist);
+
+	float nDotL = saturate(dot(normal, lightNormDir));
+
+	return ((light.diffuseColor * nDotL) + light.ambientColor) * (light.radius / (.04 * dot(lightDist, lightDist)));
+}
+
 // --------------------------------------------------------
 // The entry point (main method) for our pixel shader
 // 
@@ -60,8 +79,14 @@ float4 main(VertexToPixel input) : SV_TARGET
 {
 	float4 surfaceColor = diffuseTexture.Sample(basicSampler, input.uv);
 
-	float4 light1 = calcDirLight(dirLight1, input.normal);
-	float4 light2 = calcDirLight(dirLight2, input.normal);
+	float4 light = 0.0f;
 
-	return surfaceColor * (light1 + light2);
+	light += calcDirLight(dirLight, input.normal);
+
+	for (int i = 0; i < pointLightCount; i++)
+	{
+		light += calcPointLight(lightList[i], input.worldPos, input.normal);
+	}
+
+	return surfaceColor * light;
 }
