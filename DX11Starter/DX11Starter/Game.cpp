@@ -154,7 +154,7 @@ void Game::LoadResources()
 	CreateWICTextureFromFile(device, context, L"Assets/Textures/WoodFine0074.jpg", 0, &wood);
 	CreateWICTextureFromFile(device, context, L"Assets/Textures/BronzeCopper0011.jpg", 0, &metal);
 	CreateWICTextureFromFile(device, context, L"Assets/Textures/MarbleVeined0062.jpg", 0, &marble);
-	CreateWICTextureFromFile(device, context, L"Assets/Textures/SharpClaw Racer.png", 0, &playerTex);
+	CreateWICTextureFromFile(device, context, L"Assets/Textures/SharpClawRacer.png", 0, &playerTex);
 	CreateWICTextureFromFile(device, context, L"Assets/Textures/Enemy.png", 0, &enemy1);
 
 	ID3D11ShaderResourceView* sky = 0;
@@ -198,7 +198,7 @@ void Game::LoadResources()
 	meshes.insert(pair<char*, Mesh*>("cylinder", new Mesh("Assets/Models/cylinder.obj", device)));
 	meshes.insert(pair<char*, Mesh*>("helix", new Mesh("Assets/Models/helix.obj", device)));
 	meshes.insert(pair<char*, Mesh*>("sphere", new Mesh("Assets/Models/sphere.obj", device)));
-	meshes.insert(pair<char*, Mesh*>("player", new Mesh("Assets/Models/SharpClaw Racer.obj", device)));
+	meshes.insert(pair<char*, Mesh*>("player", new Mesh("Assets/Models/SharpClawRacer.obj", device)));
 	meshes.insert(pair<char*, Mesh*>("enemy1", new Mesh("Assets/Models/Enemy.obj", device)));
 }
 
@@ -215,7 +215,7 @@ void Game::SetupGameWorld()
 	}
 
 	//Make player
-	player = new Player(meshes.find("cone")->second, materials.find("metal")->second);
+	player = new Player(meshes.find("player")->second, materials.find("playerTex")->second);
 	entities.push_back(player);
 
 	//Make fire control
