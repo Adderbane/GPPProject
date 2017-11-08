@@ -24,7 +24,7 @@ Camera::~Camera()
 void Camera::Update(float deltaTime, float totalTime, XMFLOAT3 playerPosition)
 {
 	//Get direction
-	XMVECTOR rotation = XMQuaternionRotationRollPitchYaw(xRotation, yRotation, 0.0f);
+	//XMVECTOR rotation = XMQuaternionRotationRollPitchYaw(xRotation, yRotation, 0.0f);
 	XMVECTOR camInPlayerPlane = XMLoadFloat3(&camPosition);
 	camInPlayerPlane = XMVectorAdd(camInPlayerPlane, XMVectorSet(0.0f, 0.0f, 4.0f, 0.0f));
 	XMVECTOR playerDirection = XMLoadFloat3(&playerPosition) - camInPlayerPlane;

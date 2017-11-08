@@ -77,6 +77,12 @@ Game::~Game()
 
 	delete targetManager;
 	delete fireManager;
+
+	while (lightManager->pointLights.size() > 0)
+	{
+		delete lightManager->pointLights[lightManager->pointLights.size() - 1];
+		lightManager->pointLights.pop_back();
+	}
 	delete lightManager;
 
 	skybox->depthState->Release();
@@ -144,6 +150,14 @@ void Game::LoadResources()
 	skyboxPS->LoadShaderFile(L"SkyboxPS.cso");
 	pixelShaders.insert(pair<char*, SimplePixelShader*>("skyboxPS", skyboxPS));
 
+	SimpleVertexShader* bulletVS = new SimpleVertexShader(device, context);
+	bulletVS->LoadShaderFile(L"BulletVS.cso");
+	vertexShaders.insert(pair<char*, SimpleVertexShader*>("bulletVS", bulletVS));
+
+	SimplePixelShader* bulletPS = new SimplePixelShader(device, context);
+	bulletPS->LoadShaderFile(L"BulletPS.cso");
+	pixelShaders.insert(pair<char*, SimplePixelShader*>("bulletPS", bulletPS));
+
 
 	//Load textures
 	ID3D11ShaderResourceView* wood = 0;
@@ -182,6 +196,7 @@ void Game::LoadResources()
 	materials.insert(pair<char*, Material*>("playerTex", new Material(vertexShaders.find("basicVertexShader")->second, pixelShaders.find("basicPixelShader")->second, playerTex, sampler)));
 	materials.insert(pair<char*, Material*>("enemy1", new Material(vertexShaders.find("basicVertexShader")->second, pixelShaders.find("basicPixelShader")->second, enemy1, sampler)));
 	materials.insert(pair<char*, Material*>("sky", new Material(vertexShaders.find("skyboxVS")->second, pixelShaders.find("skyboxPS")->second, sky, sampler)));
+	materials.insert(pair<char*, Material*>("bullet", new Material(vertexShaders.find("bulletVS")->second, pixelShaders.find("bulletPS")->second, marble, sampler)));
 
 	//Release DirX stuff (references are added in each material)
 	wood->Release();
@@ -219,11 +234,12 @@ void Game::SetupGameWorld()
 	entities.push_back(player);
 
 	//Make fire control
-	fireManager = new FireManager(meshes.find("sphere")->second, materials.find("marble")->second);
+	fireManager = new FireManager(meshes.find("sphere")->second, materials.find("bullet")->second);
 	for each (Bullet* b in fireManager->GetBullets())
 	{
 		entities.push_back(b);
 		b->Link(player);
+		lightManager->pointLights.push_back(b->GetLaser());
 	}
 
 	//Create Skybox
@@ -243,12 +259,12 @@ void Game::SetupGameWorld()
 	device->CreateDepthStencilState(&ds, &(skybox->depthState));
 
 	////Point Light Test
-	PointLight p = PointLight();
-	p.AmbientColor = XMFLOAT4(0.01f, 0.01f, 0.01f, 0.01f);
-	p.DiffuseColor = XMFLOAT4(1.0f, 0.0f, 0.0f, 0.0f);
-	p.Position = XMFLOAT3(2.0f, 0.0f, 0.0f);
-	p.Radius = 0.25f;
-	lightManager->pointLights.push_back(p);
+	//PointLight p = PointLight();
+	//p.AmbientColor = XMFLOAT4(0.01f, 0.01f, 0.01f, 0.01f);
+	//p.DiffuseColor = XMFLOAT4(1.0f, 0.0f, 0.0f, 0.0f);
+	//p.Position = XMFLOAT3(2.0f, 0.0f, 0.0f);
+	//p.Radius = 0.25f;
+	//lightManager->pointLights.push_back(p);
 }
 
 
@@ -281,22 +297,27 @@ void Game::Update(float deltaTime, float totalTime)
 	else fireManager->Fire(deltaTime, totalTime, false);
 
 	//player control
-	if (GetAsyncKeyState(VK_LEFT) & 0x8000) {
+	if (GetAsyncKeyState(VK_LEFT) & 0x8000 || GetAsyncKeyState('A') & 0x8000)
+	{
 		//move left
 		player->Move(-3 * deltaTime, 0, 0);
 	}
-	if (GetAsyncKeyState(VK_RIGHT) & 0x8000) {
+	if (GetAsyncKeyState(VK_RIGHT) & 0x8000 || GetAsyncKeyState('D') & 0x8000)
+	{
 		//move right
 		player->Move(3 * deltaTime, 0, 0);
 	}
-	if (GetAsyncKeyState(VK_DOWN) & 0x8000) {
+	if (GetAsyncKeyState(VK_DOWN) & 0x8000 || GetAsyncKeyState('S') & 0x8000)
+	{
 		//move up (lean back)
 		player->Move(0, 3 * deltaTime, 0);
 	}
-	if (GetAsyncKeyState(VK_UP) & 0x8000) {
+	if (GetAsyncKeyState(VK_UP) & 0x8000 || GetAsyncKeyState('W') & 0x8000)
+	{
 		//move down (lean forward)
 		player->Move(0, -3 * deltaTime, 0);
 	}
+
 	//Update Camera
 	camera->SetPosition(player->GetPosition().x / 4, player->GetPosition().y / 4, player->GetPosition().z - 4);
 	camera->Update(deltaTime, totalTime, player->GetPosition());
@@ -351,11 +372,22 @@ void Game::Draw(float deltaTime, float totalTime)
 		1.0f,
 		0);
 
-	//Draw all entities
-	for (size_t i = 0; i < entities.size(); i++)
+	//Draw all Targets
+	for (size_t i = 0; i < targetManager->GetTargets().size(); i++)
 	{
-		entities[i]->Draw(context, camera, lightManager);
+		targetManager->GetTargets()[i]->Draw(context, camera, lightManager);
 	}
+
+	//Draw Bullets
+	context->RSSetState(skybox->rasterState);
+	for (size_t i = 0; i < fireManager->GetBullets().size(); i++)
+	{
+		fireManager->GetBullets()[i]->Draw(context, camera, lightManager);
+	}
+	context->RSSetState(0);
+
+	//Draw Player
+	player->Draw(context, camera, lightManager);
 
 	//Draw Skybox last
 	DrawSkybox(skybox);
@@ -450,7 +482,7 @@ void Game::OnMouseMove(WPARAM buttonState, int x, int y)
 	// Add any custom code here...
 
 	//Rotate camera
-	camera->Rotate((float)(x - prevMousePos.x), (float)(y - prevMousePos.y));
+	//camera->Rotate((float)(x - prevMousePos.x), (float)(y - prevMousePos.y));
 
 	// Save the previous mouse position, so we have it for the future
 	prevMousePos.x = x;

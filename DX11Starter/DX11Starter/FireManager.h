@@ -2,7 +2,6 @@
 
 #include"Bullet.h"
 #include<vector>
-#include<time.h>
 
 using namespace std;
 

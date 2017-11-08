@@ -18,6 +18,7 @@ struct DirectionalLight : Light
 
 struct PointLight : Light
 {
+	XMFLOAT4 SpecularColor;
 	XMFLOAT3 Position;
 	float Radius;
 };
