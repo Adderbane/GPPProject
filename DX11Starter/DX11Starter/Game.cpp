@@ -231,6 +231,8 @@ void Game::SetupGameWorld()
 
 	//Make player
 	player = new Player(meshes.find("player")->second, materials.find("playerTex")->second);
+	lightManager->pointLights.push_back(player->GetLeftEngine());
+	lightManager->pointLights.push_back(player->GetRightEngine());
 	entities.push_back(player);
 
 	//Make fire control
@@ -257,14 +259,6 @@ void Game::SetupGameWorld()
 	ds.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
 	ds.DepthFunc = D3D11_COMPARISON_LESS_EQUAL;
 	device->CreateDepthStencilState(&ds, &(skybox->depthState));
-
-	////Point Light Test
-	//PointLight p = PointLight();
-	//p.AmbientColor = XMFLOAT4(0.01f, 0.01f, 0.01f, 0.01f);
-	//p.DiffuseColor = XMFLOAT4(1.0f, 0.0f, 0.0f, 0.0f);
-	//p.Position = XMFLOAT3(2.0f, 0.0f, 0.0f);
-	//p.Radius = 0.25f;
-	//lightManager->pointLights.push_back(p);
 }
 
 
@@ -333,7 +327,7 @@ void Game::Update(float deltaTime, float totalTime)
   
 }
 
-void Game::CheckForCollisions(vector<Bullet*> l1, vector<Entity*> l2)
+void Game::CheckForCollisions(vector<Entity*> l1, vector<Entity*> l2)
 {
 	for (Entity* e1 : l1) {
 		if (e1->IsActive()) {
@@ -375,14 +369,14 @@ void Game::Draw(float deltaTime, float totalTime)
 	//Draw all Targets
 	for (size_t i = 0; i < targetManager->GetTargets().size(); i++)
 	{
-		targetManager->GetTargets()[i]->Draw(context, camera, lightManager);
+		((Target*) targetManager->GetTargets()[i])->Draw(context, camera, lightManager);
 	}
 
 	//Draw Bullets
 	context->RSSetState(skybox->rasterState);
 	for (size_t i = 0; i < fireManager->GetBullets().size(); i++)
 	{
-		fireManager->GetBullets()[i]->Draw(context, camera, lightManager);
+		((Bullet*) fireManager->GetBullets()[i])->Draw(context, camera, lightManager);
 	}
 	context->RSSetState(0);
 

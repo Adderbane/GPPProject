@@ -38,7 +38,7 @@ void FireManager::Fire(float deltaTime, float totalTime, bool fire)
 			{
 				if (!bulletList.at(i)->IsActive())
 				{
-					bulletList.at(i)->Launch(totalTime);
+					((Bullet*) bulletList.at(i))->Launch(totalTime);
 					break;
 				}
 			}
@@ -46,7 +46,7 @@ void FireManager::Fire(float deltaTime, float totalTime, bool fire)
 	}
 }
 
-vector<Bullet*> FireManager::GetBullets()
+vector<Entity*> FireManager::GetBullets()
 {
 	return bulletList;
 }

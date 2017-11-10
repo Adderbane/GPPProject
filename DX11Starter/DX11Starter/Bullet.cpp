@@ -12,7 +12,7 @@ Bullet::Bullet(Mesh* mesh, Material* material) : Entity(mesh, material)
 	this->laser = new PointLight();
 	this->laser->AmbientColor = XMFLOAT4(0.0f, 0.0f, 0.0f, 0.0f);
 	this->laser->DiffuseColor = XMFLOAT4(0.0f, 1.0f, 0.0f, 0.0f);
-	this->laser->SpecularColor = XMFLOAT4(1.0f, 1.0f, 1.0f, 0.0f);
+	this->laser->SpecularColor = XMFLOAT4(0.5f, 0.5f, 0.5f, 0.0f);
 	this->laser->Position = this->GetPosition();
 	this->laser->Radius = Bullet::laserRadius;
 	this->SetActive(true);
@@ -42,6 +42,29 @@ void Bullet::Update(float deltaTime, float totalTime)
 
 void Bullet::Draw(ID3D11DeviceContext* context, Camera* camera, LightManager* lightManager)
 {
+	if (this->IsActive() != true)
+	{
+		return;
+	}
+
+	SimpleVertexShader* vShader = GetMaterial()->GetVertexShader();
+	SimplePixelShader* pShader = GetMaterial()->GetPixelShader();
+
+	vShader->SetShader();
+	pShader->SetShader();
+
+	// Send data to shader variables
+	vShader->SetMatrix4x4("world", GetWorld());
+	vShader->SetMatrix4x4("view", camera->GetView());
+	vShader->SetMatrix4x4("projection", camera->GetProj());
+	vShader->SetMatrix4x4("normalWorld", GetNormalWorld());
+
+	pShader->SetData("bulletLight", &(*laser), sizeof(PointLight));
+	pShader->SetData("cameraPosition", &(camera->GetCamPosition()), sizeof(XMFLOAT3));
+
+	vShader->CopyAllBufferData();
+	pShader->CopyAllBufferData();
+
 	Entity::Draw(context, camera, lightManager);
 }
 

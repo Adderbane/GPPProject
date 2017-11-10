@@ -124,6 +124,7 @@
     <ClCompile Include="Mesh.cpp" />
     <ClCompile Include="Player.cpp" />
     <ClCompile Include="SimpleShader.cpp" />
+    <ClCompile Include="Target.cpp" />
     <ClCompile Include="TargetManager.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -140,6 +141,7 @@
     <ClInclude Include="Player.h" />
     <ClInclude Include="SimpleShader.h" />
     <ClInclude Include="Skybox.h" />
+    <ClInclude Include="Target.h" />
     <ClInclude Include="TargetManager.h" />
     <ClInclude Include="Vertex.h" />
   </ItemGroup>

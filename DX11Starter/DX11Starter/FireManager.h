@@ -11,11 +11,11 @@ public:
 	FireManager(Mesh* mesh, Material* material);
 	~FireManager();
 	void Fire(float deltaTime, float totalTime, bool fire);
-	vector<Bullet*> GetBullets();
+	vector<Entity*> GetBullets();
 private:
 	const float fireDelay = 0.5f;
 	const int maxShots = (int) ceil(Bullet::lifetime / fireDelay) + 1;
-	vector<Bullet*> bulletList;
+	vector<Entity*> bulletList;
 
 	//Fire control variables
 	float resetTimer = 0.0f;
