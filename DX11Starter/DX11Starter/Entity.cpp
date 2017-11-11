@@ -145,7 +145,7 @@ void Entity::Draw(ID3D11DeviceContext* context, Camera* camera, LightManager* li
 	PointLight lightArray[32] = {};
 	for (size_t i = 0; i < lightManager->pointLights.size(); i++)
 	{
-		lightArray[i] = lightManager->pointLights[i];
+		lightArray[i] = *(lightManager->pointLights[i]);
 	}
 	int lightCount = (int)lightManager->pointLights.size();
 

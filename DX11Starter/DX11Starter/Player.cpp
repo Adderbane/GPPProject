@@ -5,7 +5,7 @@ using namespace std;
 Player::Player(Mesh* mesh, Material* material) : Entity(mesh, material)
 {
 	this->SetActive(true);
-	this->SetRotation(XM_PIDIV2, 0.0f, 0.0f);
+	this->SetRotation(-1.0f * XM_PIDIV2, XM_PI, 0.0f);
 	decelRate = 0.5;
 	xCap = 4.0f;
 	yCap = 2.0f;
@@ -37,9 +37,10 @@ void Player::Update(float deltaTime, float totalTime)
 	
 }
 
-//void Player::Draw()
-//{
-//}
+void Player::Draw(ID3D11DeviceContext* context, Camera* camera, LightManager* lightManager)
+{
+	Entity::Draw(context, camera, lightManager);
+}
 
 void Player::Collides()
 {

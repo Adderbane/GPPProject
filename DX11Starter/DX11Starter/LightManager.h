@@ -10,6 +10,6 @@ public:
 	LightManager();
 	~LightManager();
 	DirectionalLight dirLight;
-	vector<PointLight> pointLights;
+	vector<PointLight*> pointLights;
 };
 
