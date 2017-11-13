@@ -3,6 +3,7 @@
 #include "DXCore.h"
 #include "SimpleShader.h"
 #include <DirectXMath.h>
+#include "DXRenderTarget.h"
 #include "Mesh.h"
 #include "Material.h"
 #include "Entity.h"
@@ -34,6 +35,7 @@ public:
 	void CheckForCollisions(vector<Entity*> l1, vector<Entity*> l2);
 	void Draw(float deltaTime, float totalTime);
 	void DrawSkybox(Skybox* sky);
+	void DrawScene(float deltaTime, float totalTime);
 
 	// Overridden mouse input helper methods
 	void OnMouseDown (WPARAM buttonState, int x, int y);
@@ -45,6 +47,7 @@ private:
 	// Initialization helper methods - feel free to customize, combine, etc.
 	void LoadResources();
 	void SetupGameWorld();
+	void PrepPostProcessing();
 
 	//Game Objects
 	vector<Entity*> entities;
@@ -60,8 +63,15 @@ private:
 	unordered_map<char*, SimpleVertexShader*> vertexShaders;
 	unordered_map<char*, SimplePixelShader*> pixelShaders;
 
+	//Sampler
+	ID3D11SamplerState* ppSampler;
+
 	//Camera object
 	Camera* camera;
+
+	//Postprocessing objects
+	DXRenderTarget* baseTarget; //Render scene to here (pre-postprocessing)
+	DXRenderTarget* bloomTarget; //Render light bloom effects to here
 
 	// Keeps track of the old mouse position.  Useful for 
 	// determining how far the mouse moved in a single frame.

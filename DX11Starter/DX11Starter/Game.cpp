@@ -23,18 +23,9 @@ Game::Game(HINSTANCE hInstance)
 		720,			   // Height of the window's client area
 		true)			   // Show extra stats (fps) in title bar?
 {
-	//Initialize fields
+	//Initialize camera
 	camera = new Camera((float)width, (float)height, 0.25f * XM_PI, 0.01f, 100.0f);
 	camera->SetPosition(0, 0, -3);
-
-	lightManager = new LightManager();
-	DirectionalLight d = DirectionalLight();
-	d.AmbientColor = XMFLOAT4(+0.1f, +0.1f, +0.1f, 1.0f);
-	d.DiffuseColor = XMFLOAT4(+1.0f, +1.0f, +1.0f, 1.0f);
-	d.Direction = XMFLOAT3(+1.0f, -1.0f, +1.0f);
-	lightManager->dirLight = d;
-
-	skybox = new Skybox();
 
 	prevMousePos.x = width/2;
 	prevMousePos.y = height/2;
@@ -68,6 +59,9 @@ Game::~Game()
 	}
 	materials.clear();
 
+	//Clean up sampler
+	ppSampler->Release();
+
 	//Clean up Game Objects
 	while (entities.size() > 0)
 	{
@@ -88,6 +82,10 @@ Game::~Game()
 	skybox->depthState->Release();
 	skybox->rasterState->Release();
 	delete skybox;
+
+	//Clean up render targets
+	delete baseTarget;
+	delete bloomTarget;
 
 	//Clean up camera
 	delete camera;
@@ -118,6 +116,7 @@ void Game::Init()
 	// geometry to draw and some simple camera matrices.
 	//  - You'll be expanding and/or replacing these later
 	LoadResources();
+	PrepPostProcessing();
 	SetupGameWorld();
 
 	// Tell the input assembler stage of the pipeline what kind of
@@ -158,6 +157,14 @@ void Game::LoadResources()
 	bulletPS->LoadShaderFile(L"BulletPS.cso");
 	pixelShaders.insert(pair<char*, SimplePixelShader*>("bulletPS", bulletPS));
 
+	SimpleVertexShader* PPVS = new SimpleVertexShader(device, context);
+	PPVS->LoadShaderFile(L"PPVS.cso");
+	vertexShaders.insert(pair<char*, SimpleVertexShader*>("PPVS", PPVS));
+
+	SimplePixelShader* PPPS = new SimplePixelShader(device, context);
+	PPPS->LoadShaderFile(L"PPPS.cso");
+	pixelShaders.insert(pair<char*, SimplePixelShader*>("PPPS", PPPS));
+
 
 	//Load textures
 	ID3D11ShaderResourceView* wood = 0;
@@ -175,7 +182,6 @@ void Game::LoadResources()
 	CreateDDSTextureFromFile(device, L"Assets/Textures/SunnyCubeMap.dds", 0, &sky);
 
 	//Create sampler state
-	ID3D11SamplerState* sampler;
 	D3D11_SAMPLER_DESC samplerDesc;
 
 	samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
@@ -187,7 +193,13 @@ void Game::LoadResources()
 	samplerDesc.MinLOD = 0;
 	samplerDesc.MipLODBias = 0;
 
+	ID3D11SamplerState* sampler;
 	device->CreateSamplerState(&samplerDesc, &sampler);
+
+	samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
+	samplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
+	samplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
+	device->CreateSamplerState(&samplerDesc, &ppSampler);
 
 	//Make materials
 	materials.insert(pair<char*, Material*>("wood", new Material(vertexShaders.find("basicVertexShader")->second, pixelShaders.find("basicPixelShader")->second, wood, sampler)));
@@ -217,11 +229,48 @@ void Game::LoadResources()
 	meshes.insert(pair<char*, Mesh*>("enemy1", new Mesh("Assets/Models/Enemy.obj", device)));
 }
 
+void Game::PrepPostProcessing()
+{
+	//Create 2DTexture to render to
+	D3D11_TEXTURE2D_DESC ppTexDesc = {};
+	ppTexDesc.Width = width;
+	ppTexDesc.Height = height;
+	ppTexDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+	ppTexDesc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
+	ppTexDesc.ArraySize = 1;
+	ppTexDesc.MipLevels = 1;
+	ppTexDesc.CPUAccessFlags = 0;
+	ppTexDesc.MiscFlags = 0;
+	ppTexDesc.SampleDesc.Count = 1;
+	ppTexDesc.SampleDesc.Quality = 0;
+	ppTexDesc.Usage = D3D11_USAGE_DEFAULT;
+
+	//Create RTV
+	D3D11_RENDER_TARGET_VIEW_DESC ppRTVDesc = {};
+	ppRTVDesc.Format = ppTexDesc.Format;
+	ppRTVDesc.Texture2D.MipSlice = 0;
+	ppRTVDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
+
+	//Create SRV
+	D3D11_SHADER_RESOURCE_VIEW_DESC ppSRVDesc = {};
+	ppSRVDesc.Format = ppTexDesc.Format;
+	ppSRVDesc.Texture2D.MipLevels = 1;
+	ppSRVDesc.Texture2D.MostDetailedMip = 0;
+	ppSRVDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+
+	baseTarget = new DXRenderTarget(device, ppTexDesc, ppRTVDesc, ppSRVDesc);
+	bloomTarget = new DXRenderTarget(device, ppTexDesc, ppRTVDesc, ppSRVDesc);
+}
+
 // --------------------------------------------------------
 // Creates the geometry we're going to draw
 // --------------------------------------------------------
 void Game::SetupGameWorld()
 {
+	//Set up lights and sky
+	lightManager = new LightManager();
+	skybox = new Skybox();
+
 	//Make target field
 	targetManager = new TargetManager(meshes.find("enemy1")->second, materials.find("enemy1")->second);
 	for each (Entity* e in targetManager->GetTargets())
@@ -243,6 +292,12 @@ void Game::SetupGameWorld()
 		b->Link(player);
 		lightManager->pointLights.push_back(b->GetLaser());
 	}
+
+	DirectionalLight d = DirectionalLight();
+	d.AmbientColor = XMFLOAT4(+0.1f, +0.1f, +0.1f, 1.0f);
+	d.DiffuseColor = XMFLOAT4(+1.0f, +1.0f, +1.0f, 1.0f);
+	d.Direction = XMFLOAT3(+1.0f, -1.0f, +1.0f);
+	lightManager->dirLight = d;
 
 	//Create Skybox
 	skybox->mesh = meshes.find("cube")->second;
@@ -355,28 +410,71 @@ void Game::Draw(float deltaTime, float totalTime)
 {
 	// Background color (Cornflower Blue in this case) for clearing
 	const float color[4] = { 0.4f, 0.6f, 0.75f, 0.0f };
+	UINT stride = sizeof(Vertex);
+	UINT offset = 0;
+	ID3D11Buffer* nothing = 0;
+
+	//Set Target for base render
+	ID3D11RenderTargetView* baseRTV = baseTarget->GetRTV();
+	context->OMSetRenderTargets(1, &(baseRTV), depthStencilView);
 
 	// Clear the render target and depth buffer (erases what's on the screen)
 	//  - Do this ONCE PER FRAME
 	//  - At the beginning of Draw (before drawing *anything*)
 	context->ClearRenderTargetView(backBufferRTV, color);
-	context->ClearDepthStencilView(
-		depthStencilView,
-		D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL,
-		1.0f,
-		0);
+	context->ClearDepthStencilView(depthStencilView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f,	0);
 
+	//Draw everything
+	DrawScene(deltaTime, totalTime);
+
+	//Postprocessing here
+
+	//End Postprocessing
+
+	//Set OMRTV to back buffer for final draw
+	context->OMSetRenderTargets(1, &backBufferRTV, 0);
+	context->ClearRenderTargetView(backBufferRTV, color);
+
+	//Set post-processing shaders and variables
+	SimpleVertexShader* ppVS = vertexShaders.find("PPVS")->second;
+	SimplePixelShader* ppPS = pixelShaders.find("PPPS")->second;
+
+	ppVS->SetShader();
+	ppPS->SetShader();
+	
+	ppPS->SetShaderResourceView("BasePixels", baseTarget->GetSRV());
+	ppPS->SetSamplerState("Sampler", ppSampler);
+
+	// Turn off vertex and index buffers 
+	context->IASetVertexBuffers(0, 1, &nothing, &stride, &offset);
+	context->IASetIndexBuffer(0, DXGI_FORMAT_R32_UINT, 0);
+
+	//Draw to back buffer
+	context->Draw(3, 0);
+
+	//Turn off srvs to prevent DX errors
+	ID3D11ShaderResourceView* nullSRVs[16] = {};
+	context->PSSetShaderResources(0, 16, nullSRVs);
+
+	// Present the back buffer to the user
+	//  - Puts the final frame we're drawing into the window so the user can see it
+	//  - Do this exactly ONCE PER FRAME (always at the very end of the frame)
+	swapChain->Present(0, 0);
+}
+
+void Game::DrawScene(float deltaTime, float totalTime)
+{
 	//Draw all Targets
 	for (size_t i = 0; i < targetManager->GetTargets().size(); i++)
 	{
-		((Target*) targetManager->GetTargets()[i])->Draw(context, camera, lightManager);
+		((Target*)targetManager->GetTargets()[i])->Draw(context, camera, lightManager);
 	}
 
 	//Draw Bullets
 	context->RSSetState(skybox->rasterState);
 	for (size_t i = 0; i < fireManager->GetBullets().size(); i++)
 	{
-		((Bullet*) fireManager->GetBullets()[i])->Draw(context, camera, lightManager);
+		((Bullet*)fireManager->GetBullets()[i])->Draw(context, camera, lightManager);
 	}
 	context->RSSetState(0);
 
@@ -385,11 +483,6 @@ void Game::Draw(float deltaTime, float totalTime)
 
 	//Draw Skybox last
 	DrawSkybox(skybox);
-
-	// Present the back buffer to the user
-	//  - Puts the final frame we're drawing into the window so the user can see it
-	//  - Do this exactly ONCE PER FRAME (always at the very end of the frame)
-	swapChain->Present(0, 0);
 }
 
 void Game::DrawSkybox(Skybox* sky)
