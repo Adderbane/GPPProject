@@ -1,7 +1,7 @@
 #pragma once
 
 #include<vector>
-#include"Entity.h"
+#include"Target.h"
 
 using namespace std;
 

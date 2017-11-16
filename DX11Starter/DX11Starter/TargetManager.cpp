@@ -6,10 +6,10 @@ TargetManager::TargetManager(Mesh* mesh, Material* material)
 {
 	for (size_t i = 0; i < this->count; i++)
 	{
-		Entity* e = new Entity(mesh, material);
-		e->SetPosition(0.0f, -1.0f, i * this->spacing);
-		e->SetActive(true);
-		targetList.push_back(e);
+		Entity* t = new Target(mesh, material);
+		t->SetPosition(0.0f, -1.0f, i * this->spacing);
+		t->SetActive(true);
+		targetList.push_back(t);
 	}
 }
 

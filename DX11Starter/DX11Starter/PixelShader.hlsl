@@ -20,6 +20,7 @@ struct VertexToPixel
 struct DirectionalLight {
 	float4 ambientColor;
 	float4 diffuseColor;
+	float4 specularColor;
 	float3 direction;
 };
 
