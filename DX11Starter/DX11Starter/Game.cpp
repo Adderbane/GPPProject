@@ -86,6 +86,7 @@ Game::~Game()
 	//Clean up render targets
 	delete baseTarget;
 	delete bloomTarget;
+	delete bloomTarget2;
 
 	//Clean up camera
 	delete camera;
@@ -165,6 +166,13 @@ void Game::LoadResources()
 	PPPS->LoadShaderFile(L"PPPS.cso");
 	pixelShaders.insert(pair<char*, SimplePixelShader*>("PPPS", PPPS));
 
+	SimplePixelShader* bloomPS = new SimplePixelShader(device, context);
+	bloomPS->LoadShaderFile(L"BloomPS.cso");
+	pixelShaders.insert(pair<char*, SimplePixelShader*>("bloomPS", bloomPS));
+
+	SimplePixelShader* blurPS = new SimplePixelShader(device, context);
+	blurPS->LoadShaderFile(L"BlurPS.cso");
+	pixelShaders.insert(pair<char*, SimplePixelShader*>("blurPS", blurPS));
 
 	//Load textures
 	ID3D11ShaderResourceView* wood = 0;
@@ -179,7 +187,7 @@ void Game::LoadResources()
 	CreateWICTextureFromFile(device, context, L"Assets/Textures/Enemy.png", 0, &enemy1);
 
 	ID3D11ShaderResourceView* sky = 0;
-	CreateDDSTextureFromFile(device, L"Assets/Textures/SunnyCubeMap.dds", 0, &sky);
+	CreateDDSTextureFromFile(device, L"Assets/Textures/Space.dds", 0, &sky);
 
 	//Create sampler state
 	D3D11_SAMPLER_DESC samplerDesc;
@@ -258,8 +266,13 @@ void Game::PrepPostProcessing()
 	ppSRVDesc.Texture2D.MostDetailedMip = 0;
 	ppSRVDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
 
+	//Base target to render scene to
 	baseTarget = new DXRenderTarget(device, ppTexDesc, ppRTVDesc, ppSRVDesc);
+
+	//Light Bloom targets
 	bloomTarget = new DXRenderTarget(device, ppTexDesc, ppRTVDesc, ppSRVDesc);
+	bloomTarget2 = new DXRenderTarget(device, ppTexDesc, ppRTVDesc, ppSRVDesc);
+
 }
 
 // --------------------------------------------------------
@@ -379,7 +392,6 @@ void Game::Update(float deltaTime, float totalTime)
 
 	//Collision detection
 	CheckForCollisions(fireManager->GetBullets(), targetManager->GetTargets());
-  
 }
 
 void Game::CheckForCollisions(vector<Entity*> l1, vector<Entity*> l2)
@@ -409,14 +421,20 @@ void Game::CheckForCollisions(vector<Entity*> l1, vector<Entity*> l2)
 void Game::Draw(float deltaTime, float totalTime)
 {
 	// Background color (Cornflower Blue in this case) for clearing
-	const float color[4] = { 0.4f, 0.6f, 0.75f, 0.0f };
+	const float color[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
 	UINT stride = sizeof(Vertex);
 	UINT offset = 0;
 	ID3D11Buffer* nothing = 0;
 
 	//Set Target for base render
-	ID3D11RenderTargetView* baseRTV = baseTarget->GetRTV();
-	context->OMSetRenderTargets(1, &(baseRTV), depthStencilView);
+	if (postProcessing)
+	{
+		ID3D11RenderTargetView* baseRTV = baseTarget->GetRTV();
+		context->OMSetRenderTargets(1, &baseRTV, depthStencilView);
+	}
+	else {
+		context->OMSetRenderTargets(1, &backBufferRTV, depthStencilView);
+	}
 
 	// Clear the render target and depth buffer (erases what's on the screen)
 	//  - Do this ONCE PER FRAME
@@ -427,30 +445,14 @@ void Game::Draw(float deltaTime, float totalTime)
 	//Draw everything
 	DrawScene(deltaTime, totalTime);
 
-	//Postprocessing here
-
-	//End Postprocessing
-
-	//Set OMRTV to back buffer for final draw
-	context->OMSetRenderTargets(1, &backBufferRTV, 0);
-	context->ClearRenderTargetView(backBufferRTV, color);
-
-	//Set post-processing shaders and variables
-	SimpleVertexShader* ppVS = vertexShaders.find("PPVS")->second;
-	SimplePixelShader* ppPS = pixelShaders.find("PPPS")->second;
-
-	ppVS->SetShader();
-	ppPS->SetShader();
-	
-	ppPS->SetShaderResourceView("BasePixels", baseTarget->GetSRV());
-	ppPS->SetSamplerState("Sampler", ppSampler);
-
 	// Turn off vertex and index buffers 
 	context->IASetVertexBuffers(0, 1, &nothing, &stride, &offset);
 	context->IASetIndexBuffer(0, DXGI_FORMAT_R32_UINT, 0);
 
-	//Draw to back buffer
-	context->Draw(3, 0);
+	if (postProcessing == true)
+	{
+		DrawPostProcessing();
+	}
 
 	//Turn off srvs to prevent DX errors
 	ID3D11ShaderResourceView* nullSRVs[16] = {};
@@ -525,6 +527,81 @@ void Game::DrawSkybox(Skybox* sky)
 	context->OMSetDepthStencilState(0, 0);
 }
 
+void Game::DrawPostProcessing()
+{
+	const float color[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+
+	//Begin postprocessing
+	SimpleVertexShader* ppVS = vertexShaders.find("PPVS")->second; //This should work for all draws to textures
+	ppVS->SetShader();
+
+	//Extract bright areas to bloom target
+	ID3D11RenderTargetView* bloomRTV = bloomTarget->GetRTV();
+	context->OMSetRenderTargets(1, &bloomRTV, 0);
+	context->ClearRenderTargetView(bloomRTV, color);
+
+	SimplePixelShader* bloomPS = pixelShaders.find("bloomPS")->second;
+	bloomPS->SetShader();
+
+	bloomPS->SetFloat("clipValue", clipValue);
+	bloomPS->CopyAllBufferData();
+
+	bloomPS->SetShaderResourceView("BasePixels", baseTarget->GetSRV());
+	bloomPS->SetSamplerState("Sampler", ppSampler);
+
+	context->Draw(3, 0);
+
+	//Blur horizontally to bloomTarget2
+	ID3D11RenderTargetView* bloomRTV2 = bloomTarget2->GetRTV();
+	context->OMSetRenderTargets(1, &bloomRTV2, 0);
+	context->ClearRenderTargetView(bloomRTV2, color);
+
+	SimplePixelShader* blurPS = pixelShaders.find("blurPS")->second;
+	blurPS->SetShader();
+
+	blurPS->SetFloat2("passDir", horizontDir);
+	blurPS->SetFloat("pixelWidth", 1.0f / width);
+	blurPS->SetFloat("pixelHeight", 1.0f / height);
+	blurPS->CopyAllBufferData();
+
+	blurPS->SetShaderResourceView("BasePixels", bloomTarget->GetSRV());
+	blurPS->SetSamplerState("Sampler", ppSampler);
+
+	context->Draw(3, 0);
+
+	//Blur vertically back to bloomTarget
+	context->OMSetRenderTargets(1, &bloomRTV, 0);
+	context->ClearRenderTargetView(bloomRTV, color);
+
+	blurPS->SetFloat2("passDir", verticalDir);
+	blurPS->CopyAllBufferData();
+
+	blurPS->SetShaderResourceView("BasePixels", bloomTarget2->GetSRV());
+	blurPS->SetSamplerState("Sampler", ppSampler);
+
+	context->Draw(3, 0);
+
+	//End Postprocessing
+
+	//Set OMRTV to back buffer for final draw
+	context->OMSetRenderTargets(1, &backBufferRTV, depthStencilView);
+	context->ClearRenderTargetView(backBufferRTV, color);
+	context->ClearDepthStencilView(depthStencilView, D3D11_CLEAR_DEPTH, 1.0f, 0);
+
+	//Set post-processing shaders and variables
+	SimplePixelShader* ppPS = pixelShaders.find("PPPS")->second;
+
+	ppVS->SetShader();
+	ppPS->SetShader();
+
+	ppPS->SetShaderResourceView("BasePixels", baseTarget->GetSRV());
+	ppPS->SetShaderResourceView("LightBloom", bloomTarget->GetSRV());
+	ppPS->SetSamplerState("Sampler", ppSampler);
+
+	//Draw to back buffer
+	context->Draw(3, 0);
+}
+
 
 #pragma region Mouse Input
 
@@ -545,6 +622,8 @@ void Game::OnMouseDown(WPARAM buttonState, int x, int y)
 	// events even if the mouse leaves the window.  we'll be
 	// releasing the capture once a mouse button is released
 	SetCapture(hWnd);
+	postProcessing = !postProcessing;
+
 }
 
 // --------------------------------------------------------

@@ -21,4 +21,3 @@ private:
 	ID3D11ShaderResourceView* srv;
 	ID3D11SamplerState* sampler;
 };
-

@@ -4,7 +4,6 @@ struct VertexToPixel
 	float4 position		: SV_POSITION;
 	float2 uv           : TEXCOORD0;
 };
-
 // The entry point for our vertex shader
 VertexToPixel main(uint id : SV_VertexID)
 {

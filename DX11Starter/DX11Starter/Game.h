@@ -36,6 +36,7 @@ public:
 	void Draw(float deltaTime, float totalTime);
 	void DrawSkybox(Skybox* sky);
 	void DrawScene(float deltaTime, float totalTime);
+	void DrawPostProcessing();
 
 	// Overridden mouse input helper methods
 	void OnMouseDown (WPARAM buttonState, int x, int y);
@@ -69,9 +70,14 @@ private:
 	//Camera object
 	Camera* camera;
 
-	//Postprocessing objects
+	//Postprocessing data
+	bool postProcessing = true;
 	DXRenderTarget* baseTarget; //Render scene to here (pre-postprocessing)
 	DXRenderTarget* bloomTarget; //Render light bloom effects to here
+	DXRenderTarget* bloomTarget2;
+	float clipValue = 0.72f;
+	float verticalDir[2] = { 0.0f, 1.0f };
+	float horizontDir[2] = { 1.0f, 0.0f };
 
 	// Keeps track of the old mouse position.  Useful for 
 	// determining how far the mouse moved in a single frame.
