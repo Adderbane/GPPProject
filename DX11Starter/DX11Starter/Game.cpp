@@ -83,6 +83,13 @@ Game::~Game()
 	skybox->rasterState->Release();
 	delete skybox;
 
+	//Get rid of particle stuff
+	fire->Release();
+	particleBlendState->Release();
+	particleDepthState->Release();
+	delete particleVS;
+	delete particlePS;
+
 	//Clean up render targets
 	delete baseTarget;
 	delete bloomTarget;
@@ -165,6 +172,12 @@ void Game::LoadResources()
 	PPPS->LoadShaderFile(L"PPPS.cso");
 	pixelShaders.insert(pair<char*, SimplePixelShader*>("PPPS", PPPS));
 
+	particleVS = new SimpleVertexShader(device, context);
+	particleVS->LoadShaderFile(L"ParticleVS.cso");
+
+	particlePS = new SimplePixelShader(device, context);
+	particlePS->LoadShaderFile(L"ParticlePS.cso");
+
 
 	//Load textures
 	ID3D11ShaderResourceView* wood = 0;
@@ -172,11 +185,13 @@ void Game::LoadResources()
 	ID3D11ShaderResourceView* marble = 0;
 	ID3D11ShaderResourceView* playerTex = 0;
 	ID3D11ShaderResourceView* enemy1 = 0;
+	fire = 0;
 	CreateWICTextureFromFile(device, context, L"Assets/Textures/WoodFine0074.jpg", 0, &wood);
 	CreateWICTextureFromFile(device, context, L"Assets/Textures/BronzeCopper0011.jpg", 0, &metal);
 	CreateWICTextureFromFile(device, context, L"Assets/Textures/MarbleVeined0062.jpg", 0, &marble);
 	CreateWICTextureFromFile(device, context, L"Assets/Textures/SharpClawRacer.png", 0, &playerTex);
 	CreateWICTextureFromFile(device, context, L"Assets/Textures/Enemy.png", 0, &enemy1);
+	CreateWICTextureFromFile(device, context, L"Assets/Textures/fireParticle.jpg", 0, &fire);
 
 	ID3D11ShaderResourceView* sky = 0;
 	CreateDDSTextureFromFile(device, L"Assets/Textures/SunnyCubeMap.dds", 0, &sky);
@@ -314,6 +329,61 @@ void Game::SetupGameWorld()
 	ds.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
 	ds.DepthFunc = D3D11_COMPARISON_LESS_EQUAL;
 	device->CreateDepthStencilState(&ds, &(skybox->depthState));
+
+	// A depth state for the particles
+	D3D11_DEPTH_STENCIL_DESC dsDesc = {};
+	dsDesc.DepthEnable = true;
+	dsDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ZERO; // Turns off depth writing
+	dsDesc.DepthFunc = D3D11_COMPARISON_LESS;
+	device->CreateDepthStencilState(&dsDesc, &particleDepthState);
+
+
+	// Blend for particles (additive)
+	D3D11_BLEND_DESC blend = {};
+	blend.AlphaToCoverageEnable = false;
+	blend.IndependentBlendEnable = false;
+	blend.RenderTarget[0].BlendEnable = true;
+	blend.RenderTarget[0].BlendOp = D3D11_BLEND_OP_ADD;
+	blend.RenderTarget[0].SrcBlend = D3D11_BLEND_ONE;
+	blend.RenderTarget[0].DestBlend = D3D11_BLEND_ONE;
+	blend.RenderTarget[0].BlendOpAlpha = D3D11_BLEND_OP_ADD;
+	blend.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_ONE;
+	blend.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_ONE;
+	blend.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
+	device->CreateBlendState(&blend, &particleBlendState);
+
+	// Set up particles
+	leftThruster = new ParticleEmitter(
+		500,							// Max particles
+		50,							// Particles per second
+		0.5f,								// Particle lifetime
+		0.2f,							// Start size
+		0.1f,							// End size
+		XMFLOAT4(0, 0.5f, 1, 0.6f),	// Start color
+		XMFLOAT4(0, 0.5f, 1, 0.2f),		// End color
+		XMFLOAT3(0, 0, -1),				// Start velocity
+		XMFLOAT3(0, 0, 0),				// Start position
+		XMFLOAT3(0, 0, -5),				// Start acceleration
+		device,
+		particleVS,
+		particlePS,
+		fire);
+
+	rightThruster = new ParticleEmitter(
+		500,							// Max particles
+		50,							// Particles per second
+		0.5f,								// Particle lifetime
+		0.2f,							// Start size
+		0.1f,							// End size
+		XMFLOAT4(0, 0.5f, 1, 0.6f),	// Start color
+		XMFLOAT4(0, 0.5f, 1, 0.2f),		// End color
+		XMFLOAT3(0, 0, -1),				// Start velocity
+		XMFLOAT3(0, 0, 0),				// Start position
+		XMFLOAT3(0, 0, -5),				// Start acceleration
+		device,
+		particleVS,
+		particlePS,
+		fire);
 }
 
 
@@ -370,6 +440,13 @@ void Game::Update(float deltaTime, float totalTime)
 	//Update Camera
 	camera->SetPosition(player->GetPosition().x / 4, player->GetPosition().y / 4, player->GetPosition().z - 4);
 	camera->Update(deltaTime, totalTime, player->GetPosition());
+
+	//Keep thrusters close to player
+	leftThruster->SetEmitterPosition(XMFLOAT3(player->GetPosition().x + 0.16, player->GetPosition().y + 0.15, player->GetPosition().z - 0.8f));
+	leftThruster->Update(deltaTime);
+
+	rightThruster->SetEmitterPosition(XMFLOAT3(player->GetPosition().x - 0.16, player->GetPosition().y + 0.15, player->GetPosition().z - 0.8f));
+	rightThruster->Update(deltaTime);
 
 	//Update Entities
 	for each (Entity* e in entities)
@@ -464,6 +541,7 @@ void Game::Draw(float deltaTime, float totalTime)
 
 void Game::DrawScene(float deltaTime, float totalTime)
 {
+
 	//Draw all Targets
 	for (size_t i = 0; i < targetManager->GetTargets().size(); i++)
 	{
@@ -481,8 +559,21 @@ void Game::DrawScene(float deltaTime, float totalTime)
 	//Draw Player
 	player->Draw(context, camera, lightManager);
 
-	//Draw Skybox last
+	//Draw Skybox next to last
 	DrawSkybox(skybox);
+
+	// Set up additive blending for thrusters
+	float blend[4] = { 1,1,1,1 };
+	context->OMSetBlendState(particleBlendState, blend, 0xffffffff);  // Additive blending
+	context->OMSetDepthStencilState(particleDepthState, 0);			// No depth WRITING
+	
+	// Draw the emitters
+	leftThruster->Draw(context, camera);
+	rightThruster->Draw(context, camera);
+
+	// Reset to default states for next frame
+	context->OMSetBlendState(0, blend, 0xffffffff);
+	context->OMSetDepthStencilState(0, 0);
 }
 
 void Game::DrawSkybox(Skybox* sky)

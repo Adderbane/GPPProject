@@ -15,6 +15,7 @@
 #include "LightManager.h"
 #include "Bullet.h"
 #include "Skybox.h"
+#include "ParticleEmitter.h"
 #include <vector>
 
 using namespace std;
@@ -68,6 +69,15 @@ private:
 
 	//Camera object
 	Camera* camera;
+
+	// Particle stuff
+	ID3D11ShaderResourceView* fire;
+	SimpleVertexShader* particleVS;
+	SimplePixelShader* particlePS;
+	ID3D11DepthStencilState* particleDepthState;
+	ID3D11BlendState* particleBlendState;
+	ParticleEmitter* leftThruster;
+	ParticleEmitter* rightThruster;
 
 	//Postprocessing objects
 	DXRenderTarget* baseTarget; //Render scene to here (pre-postprocessing)
