@@ -68,6 +68,20 @@ float4 calcPointLight(PointLight light, float3 position, float3 normal)
 	return ((light.diffuseColor * nDotL) + light.ambientColor) * (light.radius / (.04 * dot(lightDist, lightDist)));
 }
 
+float4 calcNormal(float3 normalFromTexture, float3 normalFromVS, float3 tangentFromVS) {
+	//Unpack normal from texture sample
+	float3 unpackedNormal = normalFromTexture * 2.0f - 1.0f;
+	//Create the TBN matrix
+	float3 N = normalize(normalFromVS); //From model in C++
+	float3 T = normalize(tangentFromVS - dot(tangentFromVS, N) * N); //Calculated from UVs in C++
+	float3 B = cross(N, T);
+
+	float3x3 TBN = float3x3(T, B, N);
+
+	//transform normal from map
+	float3 finalNormal = mul(unpackedNormal, TBN);
+}
+
 // --------------------------------------------------------
 // The entry point (main method) for our pixel shader
 // 

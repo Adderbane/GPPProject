@@ -194,6 +194,11 @@ void Game::LoadResources()
 	ID3D11ShaderResourceView* marble = 0;
 	ID3D11ShaderResourceView* playerTex = 0;
 	ID3D11ShaderResourceView* enemy1 = 0;
+
+	//Load normal maps
+	ID3D11ShaderResourceView* playerNorm = 0;
+	ID3D11ShaderResourceView* enemyNorm = 0;
+
 	fire = 0;
 	CreateWICTextureFromFile(device, context, L"Assets/Textures/WoodFine0074.jpg", 0, &wood);
 	CreateWICTextureFromFile(device, context, L"Assets/Textures/BronzeCopper0011.jpg", 0, &metal);
@@ -201,6 +206,8 @@ void Game::LoadResources()
 	CreateWICTextureFromFile(device, context, L"Assets/Textures/SharpClawRacer.png", 0, &playerTex);
 	CreateWICTextureFromFile(device, context, L"Assets/Textures/Enemy.png", 0, &enemy1);
 	CreateWICTextureFromFile(device, context, L"Assets/Textures/fireParticle.jpg", 0, &fire);
+	CreateWICTextureFromFile(device, context, L"Assets/Textures/SharpClawNormal.png", 0, &playerNorm);
+	CreateWICTextureFromFile(device, context, L"Assets/Textures/EnemyNormal.png", 0, &enemyNorm);
 
 	ID3D11ShaderResourceView* sky = 0;
 	CreateDDSTextureFromFile(device, L"Assets/Textures/Space.dds", 0, &sky);
