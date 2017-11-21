@@ -15,6 +15,7 @@ struct VertexToPixel
 	float3 normal       : NORMAL;
 	float2 uv           : TEXTCOORD;
 	float3 worldPos     : POSITION;
+	float3 tangent		: TANGENT;
 };
 
 struct DirectionalLight {
