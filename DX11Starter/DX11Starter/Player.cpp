@@ -6,7 +6,10 @@ Player::Player(Mesh* mesh, Material* material) : Entity(mesh, material)
 {
 	this->SetActive(true);
 	this->SetRotation(-1.0f * XM_PIDIV2, XM_PI, 0.0f);
-	decelRate = 0.5;
+	accelRate = 0.2;
+	decelRate = 0.09;
+	velocity = XMFLOAT3(0, 0, 0);
+	maxVelocity = 0.8;
 	xCap = 4.0f;
 	yCap = 2.0f;
 
@@ -49,7 +52,6 @@ void Player::Update(float deltaTime, float totalTime)
 		pos.y = -yCap;
 	}
 	this->SetPosition(pos.x, pos.y, GetPosition().z);
-
 	//Update Engine lights
 	leftEngine->Position = XMFLOAT3(pos.x - engineOffset.x, pos.y + engineOffset.y, pos.z + engineOffset.z);
 	rightEngine->Position = XMFLOAT3(pos.x + engineOffset.x, pos.y + engineOffset.y, pos.z + engineOffset.z);
@@ -96,6 +98,44 @@ void Player::Draw(ID3D11DeviceContext* context, Camera* camera, LightManager* li
 
 void Player::Collides()
 {
+}
+
+void Player::Accelerate(float dx, float dy, float dz)
+{
+	velocity.x += dx;
+	if (velocity.x > maxVelocity) velocity.x = maxVelocity;
+	velocity.y += dy;
+	if (velocity.y > maxVelocity) velocity.y = maxVelocity;
+	velocity.z += dz;
+	if (velocity.z > maxVelocity) velocity.z = maxVelocity;
+}
+
+void Player::Decelerate(float d)
+{
+	if (velocity.x > 0) {
+		velocity.x -= d;
+		if (velocity.x < 0) velocity.x = 0;
+	}
+	if(velocity.x < 0){
+		velocity.x += d;
+		if (velocity.x > 0) velocity.x = 0;
+	}
+	if (velocity.y > 0) {
+		velocity.y -= d;
+		if (velocity.y < 0) velocity.y = 0;
+	}
+	if (velocity.y < 0) {
+		velocity.y += d;
+		if (velocity.y > 0) velocity.y = 0;
+	}
+	if (velocity.z > 0) {
+		velocity.z -= d;
+		if (velocity.z < 0) velocity.z = 0;
+	}
+	if (velocity.z < 0) {
+		velocity.z += d;
+		if (velocity.z > 0) velocity.z = 0;
+	}
 }
 
 PointLight* Player::GetLeftEngine()

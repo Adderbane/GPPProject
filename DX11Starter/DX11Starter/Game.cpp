@@ -437,26 +437,36 @@ void Game::Update(float deltaTime, float totalTime)
 	else fireManager->Fire(deltaTime, totalTime, false);
 
 	//player control
+	float aX = 0;
+	float aY = 0;
 	if (GetAsyncKeyState(VK_LEFT) & 0x8000 || GetAsyncKeyState('A') & 0x8000)
 	{
 		//move left
-		player->Move(-3 * deltaTime, 0, 0);
+		//player->Move(-3 * deltaTime, 0, 0);
+		aX = -player->accelRate * deltaTime;
 	}
 	if (GetAsyncKeyState(VK_RIGHT) & 0x8000 || GetAsyncKeyState('D') & 0x8000)
 	{
 		//move right
-		player->Move(3 * deltaTime, 0, 0);
+		//player->Move(3 * deltaTime, 0, 0);
+		aX = player->accelRate * deltaTime;
 	}
 	if (GetAsyncKeyState(VK_DOWN) & 0x8000 || GetAsyncKeyState('S') & 0x8000)
 	{
 		//move up (lean back)
-		player->Move(0, 3 * deltaTime, 0);
+		//player->Move(0, 3 * deltaTime, 0);
+		aY = player->accelRate * deltaTime;
 	}
 	if (GetAsyncKeyState(VK_UP) & 0x8000 || GetAsyncKeyState('W') & 0x8000)
 	{
 		//move down (lean forward)
-		player->Move(0, -3 * deltaTime, 0);
+		//player->Move(0, -3 * deltaTime, 0);
+		aY = -player->accelRate * deltaTime;
 	}
+	player->Accelerate(aX, aY, 0);
+	XMFLOAT3 v = player->velocity;
+	player->Move(v.x, v.y, v.z);
+	player->Decelerate(player->decelRate * deltaTime);
 
 	//Update Camera
 	camera->SetPosition(player->GetPosition().x / 4.0f, player->GetPosition().y / 4.0f, player->GetPosition().z - 4.0f);
