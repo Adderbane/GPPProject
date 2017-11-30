@@ -13,6 +13,8 @@
     <FxCompile Include="SkyboxPS.hlsl" />
     <FxCompile Include="SkyboxVS.hlsl" />
     <FxCompile Include="VertexShader.hlsl" />
+    <FxCompile Include="ShipPS.hlsl" />
+    <FxCompile Include="ShipVS.hlsl" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Bullet.cpp" />

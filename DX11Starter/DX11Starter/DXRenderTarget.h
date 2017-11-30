@@ -12,7 +12,7 @@ public:
 	ID3D11ShaderResourceView* GetSRV();
 
 private:
-	ID3D11RenderTargetView* rtv;
-	ID3D11ShaderResourceView* srv;
+	ID3D11RenderTargetView* rtv = 0;
+	ID3D11ShaderResourceView* srv = 0;
 };
 

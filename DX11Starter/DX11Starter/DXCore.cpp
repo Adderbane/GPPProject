@@ -68,6 +68,13 @@ DXCore::DXCore(
 // --------------------------------------------------------
 DXCore::~DXCore()
 {
+	bool DXLeakDebug = false;
+	ID3D11Debug* pDebug;
+	if (DXLeakDebug)
+	{
+		device->QueryInterface(IID_PPV_ARGS(&pDebug));
+	}
+
 	// Release all DirectX resources
 	if (depthStencilView) { depthStencilView->Release(); }
 	if (backBufferRTV) { backBufferRTV->Release();}
@@ -75,6 +82,12 @@ DXCore::~DXCore()
 	if (swapChain) { swapChain->Release();}
 	if (context) { context->Release();}
 	if (device) { device->Release();}
+
+	if (DXLeakDebug)
+	{
+		pDebug->ReportLiveDeviceObjects(D3D11_RLDO_DETAIL);
+		pDebug->Release();
+	}
 }
 
 // --------------------------------------------------------

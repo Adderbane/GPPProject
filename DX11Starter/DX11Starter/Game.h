@@ -73,8 +73,6 @@ private:
 
 	// Particle stuff
 	ID3D11ShaderResourceView* fire;
-	SimpleVertexShader* particleVS;
-	SimplePixelShader* particlePS;
 	ID3D11DepthStencilState* particleDepthState;
 	ID3D11BlendState* particleBlendState;
 	ParticleEmitter* leftThruster;
@@ -88,6 +86,8 @@ private:
 	float clipValue = 0.72f;
 	float verticalDir[2] = { 0.0f, 1.0f };
 	float horizontDir[2] = { 1.0f, 0.0f };
+
+	ID3D11ShaderResourceView* nullSRVs[16] = {};
 
 	// Keeps track of the old mouse position.  Useful for 
 	// determining how far the mouse moved in a single frame.

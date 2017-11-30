@@ -24,7 +24,7 @@ public:
 	const static float laserRadius;
 private:
 	float spawnTime;
-	PointLight* laser;
-	Entity* player;
+	PointLight* laser = 0;
+	Entity* player = 0;
 };
 

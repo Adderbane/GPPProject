@@ -1,19 +1,28 @@
 #include "Material.h"
 
-Material::Material(SimpleVertexShader* vertexShader, SimplePixelShader* pixelShader, ID3D11ShaderResourceView* srv, ID3D11SamplerState* sampler)
+Material::Material(SimpleVertexShader* vertexShader, SimplePixelShader* pixelShader, ID3D11ShaderResourceView* texture, ID3D11SamplerState* sampler)
 {
 	this->vertexShader = vertexShader;
 	this->pixelShader = pixelShader;
-	this->srv = srv;
+	this->texture = texture;
 	this->sampler = sampler;
 
-	srv->AddRef();
+	texture->AddRef();
 	sampler->AddRef();
+}
+
+Material::Material(SimpleVertexShader* vertexShader, SimplePixelShader* pixelShader, ID3D11ShaderResourceView* texture, ID3D11ShaderResourceView* normalMap, ID3D11SamplerState* sampler) : Material(vertexShader, pixelShader, texture, sampler)
+{
+	this->normalMap = normalMap;
+
+	normalMap->AddRef();
 }
 
 Material::~Material()
 {
-	srv->Release();
+	if (normalMap != 0) normalMap->Release();
+
+	texture->Release();
 	sampler->Release();
 }
 
@@ -28,9 +37,14 @@ SimplePixelShader* Material::GetPixelShader()
 	return pixelShader;
 }
 
-ID3D11ShaderResourceView* Material::GetSRV()
+ID3D11ShaderResourceView* Material::GetTexture()
 {
-	return srv;
+	return texture;
+}
+
+ID3D11ShaderResourceView* Material::GetNormal()
+{
+	return normalMap;
 }
 
 ID3D11SamplerState* Material::GetSampler()

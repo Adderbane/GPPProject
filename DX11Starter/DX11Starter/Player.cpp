@@ -6,10 +6,10 @@ Player::Player(Mesh* mesh, Material* material) : Entity(mesh, material)
 {
 	this->SetActive(true);
 	this->SetRotation(-1.0f * XM_PIDIV2, XM_PI, 0.0f);
-	accelRate = 0.2;
-	decelRate = 0.09;
+	accelRate = 0.2f;
+	decelRate = 0.09f;
 	velocity = XMFLOAT3(0, 0, 0);
-	maxVelocity = 0.8;
+	maxVelocity = 0.8f;
 	xCap = 4.0f;
 	yCap = 2.0f;
 
@@ -38,7 +38,7 @@ void Player::Update(float deltaTime, float totalTime)
 {
 	XMFLOAT3 pos = GetPosition();
 	Entity::Update(deltaTime, totalTime);
-	this->Move(0, 0, 2.0f * deltaTime);
+	//this->Move(0, 0, 2.0f * deltaTime);
 	if (pos.x > xCap) {
 		pos.x = xCap;
 	}
@@ -52,6 +52,7 @@ void Player::Update(float deltaTime, float totalTime)
 		pos.y = -yCap;
 	}
 	this->SetPosition(pos.x, pos.y, GetPosition().z);
+
 	//Update Engine lights
 	leftEngine->Position = XMFLOAT3(pos.x - engineOffset.x, pos.y + engineOffset.y, pos.z + engineOffset.z);
 	rightEngine->Position = XMFLOAT3(pos.x + engineOffset.x, pos.y + engineOffset.y, pos.z + engineOffset.z);
@@ -87,7 +88,8 @@ void Player::Draw(ID3D11DeviceContext* context, Camera* camera, LightManager* li
 	pShader->SetData("lightList", &lightArray, sizeof(PointLight) * 32);
 	pShader->SetData("pointLightCount", &lightCount, sizeof(int));
 	pShader->SetData("cameraPosition", &(camera->GetCamPosition()), sizeof(XMFLOAT3));
-	pShader->SetShaderResourceView("diffuseTexture", GetMaterial()->GetSRV());
+	pShader->SetShaderResourceView("diffuseTexture", GetMaterial()->GetTexture());
+	pShader->SetShaderResourceView("normalMap", GetMaterial()->GetNormal());
 	pShader->SetSamplerState("basicSampler", GetMaterial()->GetSampler());
 
 	vShader->CopyAllBufferData();
