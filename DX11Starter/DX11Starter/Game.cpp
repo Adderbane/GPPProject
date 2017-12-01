@@ -85,7 +85,7 @@ Game::~Game()
 
 	//Get rid of particle stuff
 	fire->Release();
-	particleBlendState->Release();
+	additiveBlendState->Release();
 	particleDepthState->Release();
 	delete particleVS;
 	delete particlePS;
@@ -350,7 +350,7 @@ void Game::SetupGameWorld()
 	blend.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_ONE;
 	blend.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_ONE;
 	blend.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
-	device->CreateBlendState(&blend, &particleBlendState);
+	device->CreateBlendState(&blend, &additiveBlendState);
 
 	// Set up particles
 	leftThruster = new ParticleEmitter(
@@ -562,16 +562,31 @@ void Game::DrawScene(float deltaTime, float totalTime)
 	//Draw Skybox next to last
 	DrawSkybox(skybox);
 
-	// Set up additive blending for thrusters
-	float blend[4] = { 1,1,1,1 };
-	context->OMSetBlendState(particleBlendState, blend, 0xffffffff);  // Additive blending
-	context->OMSetDepthStencilState(particleDepthState, 0);			// No depth WRITING
+	//Draw Particles! This is a three step process, so here's what you do:
+	//Step 1: Set up your first blend state, like additive blending
+	SetAdditiveBlending();
 	
-	// Draw the emitters
+	//Step 2: Draw the emitters using that blend state
 	leftThruster->Draw(context, camera);
 	rightThruster->Draw(context, camera);
 
+	//Repeat steps 1 & 2 for other blending states
+
+	//Step 3: Reset to default states for next frame
+	ClearBlending();
+}
+
+void Game::SetAdditiveBlending()
+{
+	float blend[4] = { 1,1,1,1 };
+	context->OMSetBlendState(additiveBlendState, blend, 0xffffffff);  // Additive blending
+	context->OMSetDepthStencilState(particleDepthState, 0);			// No depth WRITING
+}
+
+void Game::ClearBlending()
+{
 	// Reset to default states for next frame
+	float blend[4] = { 1,1,1,1 };
 	context->OMSetBlendState(0, blend, 0xffffffff);
 	context->OMSetDepthStencilState(0, 0);
 }

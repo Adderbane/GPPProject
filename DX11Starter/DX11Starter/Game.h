@@ -37,6 +37,8 @@ public:
 	void Draw(float deltaTime, float totalTime);
 	void DrawSkybox(Skybox* sky);
 	void DrawScene(float deltaTime, float totalTime);
+	void SetAdditiveBlending();
+	void ClearBlending();
 
 	// Overridden mouse input helper methods
 	void OnMouseDown (WPARAM buttonState, int x, int y);
@@ -75,7 +77,7 @@ private:
 	SimpleVertexShader* particleVS;
 	SimplePixelShader* particlePS;
 	ID3D11DepthStencilState* particleDepthState;
-	ID3D11BlendState* particleBlendState;
+	ID3D11BlendState* additiveBlendState;
 	ParticleEmitter* leftThruster;
 	ParticleEmitter* rightThruster;
 
