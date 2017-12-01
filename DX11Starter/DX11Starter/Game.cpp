@@ -217,7 +217,7 @@ void Game::LoadResources()
 	CreateWICTextureFromFile(device, context, L"Assets/Textures/EnemyNormal.png", 0, &enemyNorm);
 
 	ID3D11ShaderResourceView* sky = 0;
-	CreateDDSTextureFromFile(device, L"Assets/Textures/Space.dds", 0, &sky);
+	CreateDDSTextureFromFile(device, L"Assets/Textures/space2.dds", 0, &sky);
 
 	//Create sampler state
 	D3D11_SAMPLER_DESC samplerDesc;
