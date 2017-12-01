@@ -13,15 +13,17 @@ struct VertexToPixel
 
 // Textures and such
 Texture2D BasePixels	: register(t0);
+Texture2D LightBloom    : register(t1);
 SamplerState Sampler	: register(s0);
 
 // Entry point for this pixel shader
 float4 main(VertexToPixel input) : SV_TARGET
 {
-	// Some standard average stuff
-	float4 finalColor = float4(0,0,0,0);
 
-	finalColor += BasePixels.Sample(Sampler, input.uv);
+	float4 baseColor = BasePixels.Sample(Sampler, input.uv);
+	float4 bloomColor = LightBloom.Sample(Sampler, input.uv);
+
+	float4 finalColor = baseColor + (bloomColor - (baseColor * bloomColor));
 
 	// Average color
 	return finalColor;

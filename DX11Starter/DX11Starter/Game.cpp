@@ -87,12 +87,11 @@ Game::~Game()
 	fire->Release();
 	additiveBlendState->Release();
 	particleDepthState->Release();
-	delete particleVS;
-	delete particlePS;
 
 	//Clean up render targets
 	delete baseTarget;
 	delete bloomTarget;
+	delete bloomTarget2;
 
 	//Clean up camera
 	delete camera;
@@ -148,6 +147,14 @@ void Game::LoadResources()
 	pixelShader->LoadShaderFile(L"PixelShader.cso");
 	pixelShaders.insert(pair<char*, SimplePixelShader*>("basicPixelShader", pixelShader));
 
+	SimpleVertexShader* shipVS = new SimpleVertexShader(device, context);
+	shipVS->LoadShaderFile(L"ShipVS.cso");
+	vertexShaders.insert(pair<char*, SimpleVertexShader*>("shipVS", shipVS));
+
+	SimplePixelShader* shipPS = new SimplePixelShader(device, context);
+	shipPS->LoadShaderFile(L"ShipPS.cso");
+	pixelShaders.insert(pair<char*, SimplePixelShader*>("shipPS", shipPS));
+
 	SimpleVertexShader* skyboxVS = new SimpleVertexShader(device, context);
 	skyboxVS->LoadShaderFile(L"SkyboxVS.cso");
 	vertexShaders.insert(pair<char*, SimpleVertexShader*>("skyboxVS", skyboxVS));
@@ -172,12 +179,21 @@ void Game::LoadResources()
 	PPPS->LoadShaderFile(L"PPPS.cso");
 	pixelShaders.insert(pair<char*, SimplePixelShader*>("PPPS", PPPS));
 
-	particleVS = new SimpleVertexShader(device, context);
+	SimplePixelShader* bloomPS = new SimplePixelShader(device, context);
+	bloomPS->LoadShaderFile(L"BloomPS.cso");
+	pixelShaders.insert(pair<char*, SimplePixelShader*>("bloomPS", bloomPS));
+
+	SimplePixelShader* blurPS = new SimplePixelShader(device, context);
+	blurPS->LoadShaderFile(L"BlurPS.cso");
+	pixelShaders.insert(pair<char*, SimplePixelShader*>("blurPS", blurPS));
+
+	SimpleVertexShader* particleVS = new SimpleVertexShader(device, context);
 	particleVS->LoadShaderFile(L"ParticleVS.cso");
+	vertexShaders.insert(pair<char*, SimpleVertexShader*>("particleVS", particleVS));
 
-	particlePS = new SimplePixelShader(device, context);
+	SimplePixelShader* particlePS = new SimplePixelShader(device, context);
 	particlePS->LoadShaderFile(L"ParticlePS.cso");
-
+	pixelShaders.insert(pair<char*, SimplePixelShader*>("particlePS", particlePS));
 
 	//Load textures
 	ID3D11ShaderResourceView* wood = 0;
@@ -185,6 +201,11 @@ void Game::LoadResources()
 	ID3D11ShaderResourceView* marble = 0;
 	ID3D11ShaderResourceView* playerTex = 0;
 	ID3D11ShaderResourceView* enemy1 = 0;
+
+	//Load normal maps
+	ID3D11ShaderResourceView* playerNorm = 0;
+	ID3D11ShaderResourceView* enemyNorm = 0;
+
 	fire = 0;
 	CreateWICTextureFromFile(device, context, L"Assets/Textures/WoodFine0074.jpg", 0, &wood);
 	CreateWICTextureFromFile(device, context, L"Assets/Textures/BronzeCopper0011.jpg", 0, &metal);
@@ -192,9 +213,11 @@ void Game::LoadResources()
 	CreateWICTextureFromFile(device, context, L"Assets/Textures/SharpClawRacer.png", 0, &playerTex);
 	CreateWICTextureFromFile(device, context, L"Assets/Textures/Enemy.png", 0, &enemy1);
 	CreateWICTextureFromFile(device, context, L"Assets/Textures/fireParticle.jpg", 0, &fire);
+	CreateWICTextureFromFile(device, context, L"Assets/Textures/SharpClawNormal.png", 0, &playerNorm);
+	CreateWICTextureFromFile(device, context, L"Assets/Textures/EnemyNormal.png", 0, &enemyNorm);
 
 	ID3D11ShaderResourceView* sky = 0;
-	CreateDDSTextureFromFile(device, L"Assets/Textures/SunnyCubeMap.dds", 0, &sky);
+	CreateDDSTextureFromFile(device, L"Assets/Textures/space2.dds", 0, &sky);
 
 	//Create sampler state
 	D3D11_SAMPLER_DESC samplerDesc;
@@ -220,8 +243,8 @@ void Game::LoadResources()
 	materials.insert(pair<char*, Material*>("wood", new Material(vertexShaders.find("basicVertexShader")->second, pixelShaders.find("basicPixelShader")->second, wood, sampler)));
 	materials.insert(pair<char*, Material*>("metal", new Material(vertexShaders.find("basicVertexShader")->second, pixelShaders.find("basicPixelShader")->second, metal, sampler)));
 	materials.insert(pair<char*, Material*>("marble", new Material(vertexShaders.find("basicVertexShader")->second, pixelShaders.find("basicPixelShader")->second, marble, sampler)));
-	materials.insert(pair<char*, Material*>("playerTex", new Material(vertexShaders.find("basicVertexShader")->second, pixelShaders.find("basicPixelShader")->second, playerTex, sampler)));
-	materials.insert(pair<char*, Material*>("enemy1", new Material(vertexShaders.find("basicVertexShader")->second, pixelShaders.find("basicPixelShader")->second, enemy1, sampler)));
+	materials.insert(pair<char*, Material*>("playerTex", new Material(vertexShaders.find("shipVS")->second, pixelShaders.find("shipPS")->second, playerTex, playerNorm, sampler)));
+	materials.insert(pair<char*, Material*>("enemy1", new Material(vertexShaders.find("shipVS")->second, pixelShaders.find("shipPS")->second, enemy1, enemyNorm, sampler)));
 	materials.insert(pair<char*, Material*>("sky", new Material(vertexShaders.find("skyboxVS")->second, pixelShaders.find("skyboxPS")->second, sky, sampler)));
 	materials.insert(pair<char*, Material*>("bullet", new Material(vertexShaders.find("bulletVS")->second, pixelShaders.find("bulletPS")->second, marble, sampler)));
 
@@ -230,7 +253,9 @@ void Game::LoadResources()
 	metal->Release();
 	marble->Release();
 	playerTex->Release();
+	playerNorm->Release();
 	enemy1->Release();
+	enemyNorm->Release();
 	sky->Release();
 	sampler->Release();
 
@@ -273,8 +298,13 @@ void Game::PrepPostProcessing()
 	ppSRVDesc.Texture2D.MostDetailedMip = 0;
 	ppSRVDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
 
+	//Base target to render scene to
 	baseTarget = new DXRenderTarget(device, ppTexDesc, ppRTVDesc, ppSRVDesc);
+
+	//Light Bloom targets
 	bloomTarget = new DXRenderTarget(device, ppTexDesc, ppRTVDesc, ppSRVDesc);
+	bloomTarget2 = new DXRenderTarget(device, ppTexDesc, ppRTVDesc, ppSRVDesc);
+
 }
 
 // --------------------------------------------------------
@@ -309,7 +339,7 @@ void Game::SetupGameWorld()
 	}
 
 	DirectionalLight d = DirectionalLight();
-	d.AmbientColor = XMFLOAT4(+0.1f, +0.1f, +0.1f, 1.0f);
+	d.AmbientColor = XMFLOAT4(+0.2f, +0.2f, +0.2f, 1.0f);
 	d.DiffuseColor = XMFLOAT4(+1.0f, +1.0f, +1.0f, 1.0f);
 	d.Direction = XMFLOAT3(+1.0f, -1.0f, +1.0f);
 	lightManager->dirLight = d;
@@ -365,8 +395,8 @@ void Game::SetupGameWorld()
 		XMFLOAT3(0, 0, 0),				// Start position
 		XMFLOAT3(0, 0, -5),				// Start acceleration
 		device,
-		particleVS,
-		particlePS,
+		vertexShaders.find("particleVS")->second,
+		pixelShaders.find("particlePS")->second,
 		fire);
 
 	rightThruster = new ParticleEmitter(
@@ -381,8 +411,8 @@ void Game::SetupGameWorld()
 		XMFLOAT3(0, 0, 0),				// Start position
 		XMFLOAT3(0, 0, -5),				// Start acceleration
 		device,
-		particleVS,
-		particlePS,
+		vertexShaders.find("particleVS")->second,
+		pixelShaders.find("particlePS")->second,
 		fire);
 }
 
@@ -416,36 +446,46 @@ void Game::Update(float deltaTime, float totalTime)
 	else fireManager->Fire(deltaTime, totalTime, false);
 
 	//player control
+	float aX = 0;
+	float aY = 0;
 	if (GetAsyncKeyState(VK_LEFT) & 0x8000 || GetAsyncKeyState('A') & 0x8000)
 	{
 		//move left
-		player->Move(-3 * deltaTime, 0, 0);
+		//player->Move(-3 * deltaTime, 0, 0);
+		aX = -player->accelRate * deltaTime;
 	}
 	if (GetAsyncKeyState(VK_RIGHT) & 0x8000 || GetAsyncKeyState('D') & 0x8000)
 	{
 		//move right
-		player->Move(3 * deltaTime, 0, 0);
+		//player->Move(3 * deltaTime, 0, 0);
+		aX = player->accelRate * deltaTime;
 	}
 	if (GetAsyncKeyState(VK_DOWN) & 0x8000 || GetAsyncKeyState('S') & 0x8000)
 	{
 		//move up (lean back)
-		player->Move(0, 3 * deltaTime, 0);
+		//player->Move(0, 3 * deltaTime, 0);
+		aY = player->accelRate * deltaTime;
 	}
 	if (GetAsyncKeyState(VK_UP) & 0x8000 || GetAsyncKeyState('W') & 0x8000)
 	{
 		//move down (lean forward)
-		player->Move(0, -3 * deltaTime, 0);
+		//player->Move(0, -3 * deltaTime, 0);
+		aY = -player->accelRate * deltaTime;
 	}
+	player->Accelerate(aX, aY, 0);
+	XMFLOAT3 v = player->velocity;
+	player->Move(v.x, v.y, v.z);
+	player->Decelerate(player->decelRate * deltaTime);
 
 	//Update Camera
-	camera->SetPosition(player->GetPosition().x / 4, player->GetPosition().y / 4, player->GetPosition().z - 4);
+	camera->SetPosition(player->GetPosition().x / 4.0f, player->GetPosition().y / 4.0f, player->GetPosition().z - 4.0f);
 	camera->Update(deltaTime, totalTime, player->GetPosition());
 
 	//Keep thrusters close to player
-	leftThruster->SetEmitterPosition(XMFLOAT3(player->GetPosition().x + 0.16, player->GetPosition().y + 0.15, player->GetPosition().z - 0.8f));
+	leftThruster->SetEmitterPosition(XMFLOAT3(player->GetPosition().x + 0.16f, player->GetPosition().y + 0.15f, player->GetPosition().z - 0.8f));
 	leftThruster->Update(deltaTime);
 
-	rightThruster->SetEmitterPosition(XMFLOAT3(player->GetPosition().x - 0.16, player->GetPosition().y + 0.15, player->GetPosition().z - 0.8f));
+	rightThruster->SetEmitterPosition(XMFLOAT3(player->GetPosition().x - 0.16f, player->GetPosition().y + 0.15f, player->GetPosition().z - 0.8f));
 	rightThruster->Update(deltaTime);
 
 	//Update Entities
@@ -456,7 +496,6 @@ void Game::Update(float deltaTime, float totalTime)
 
 	//Collision detection
 	CheckForCollisions(fireManager->GetBullets(), targetManager->GetTargets());
-  
 }
 
 void Game::CheckForCollisions(vector<Entity*> l1, vector<Entity*> l2)
@@ -486,14 +525,20 @@ void Game::CheckForCollisions(vector<Entity*> l1, vector<Entity*> l2)
 void Game::Draw(float deltaTime, float totalTime)
 {
 	// Background color (Cornflower Blue in this case) for clearing
-	const float color[4] = { 0.4f, 0.6f, 0.75f, 0.0f };
+	const float color[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
 	UINT stride = sizeof(Vertex);
 	UINT offset = 0;
 	ID3D11Buffer* nothing = 0;
 
 	//Set Target for base render
-	ID3D11RenderTargetView* baseRTV = baseTarget->GetRTV();
-	context->OMSetRenderTargets(1, &(baseRTV), depthStencilView);
+	if (postProcessing)
+	{
+		ID3D11RenderTargetView* baseRTV = baseTarget->GetRTV();
+		context->OMSetRenderTargets(1, &baseRTV, depthStencilView);
+	}
+	else {
+		context->OMSetRenderTargets(1, &backBufferRTV, depthStencilView);
+	}
 
 	// Clear the render target and depth buffer (erases what's on the screen)
 	//  - Do this ONCE PER FRAME
@@ -504,33 +549,16 @@ void Game::Draw(float deltaTime, float totalTime)
 	//Draw everything
 	DrawScene(deltaTime, totalTime);
 
-	//Postprocessing here
-
-	//End Postprocessing
-
-	//Set OMRTV to back buffer for final draw
-	context->OMSetRenderTargets(1, &backBufferRTV, 0);
-	context->ClearRenderTargetView(backBufferRTV, color);
-
-	//Set post-processing shaders and variables
-	SimpleVertexShader* ppVS = vertexShaders.find("PPVS")->second;
-	SimplePixelShader* ppPS = pixelShaders.find("PPPS")->second;
-
-	ppVS->SetShader();
-	ppPS->SetShader();
-	
-	ppPS->SetShaderResourceView("BasePixels", baseTarget->GetSRV());
-	ppPS->SetSamplerState("Sampler", ppSampler);
-
 	// Turn off vertex and index buffers 
 	context->IASetVertexBuffers(0, 1, &nothing, &stride, &offset);
 	context->IASetIndexBuffer(0, DXGI_FORMAT_R32_UINT, 0);
 
-	//Draw to back buffer
-	context->Draw(3, 0);
+	if (postProcessing == true)
+	{
+		DrawPostProcessing();
+	}
 
 	//Turn off srvs to prevent DX errors
-	ID3D11ShaderResourceView* nullSRVs[16] = {};
 	context->PSSetShaderResources(0, 16, nullSRVs);
 
 	// Present the back buffer to the user
@@ -606,7 +634,7 @@ void Game::DrawSkybox(Skybox* sky)
 	vShader->SetMatrix4x4("view", camera->GetView());
 	vShader->SetMatrix4x4("projection", camera->GetProj());
 	
-	pShader->SetShaderResourceView("skyboxTexture", material->GetSRV());
+	pShader->SetShaderResourceView("skyboxTexture", material->GetTexture());
 	pShader->SetSamplerState("basicSampler", material->GetSampler());
 
 	//Copy data
@@ -631,6 +659,84 @@ void Game::DrawSkybox(Skybox* sky)
 	context->OMSetDepthStencilState(0, 0);
 }
 
+void Game::DrawPostProcessing()
+{
+	const float color[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+
+	//Begin postprocessing
+	SimpleVertexShader* ppVS = vertexShaders.find("PPVS")->second; //This should work for all draws to textures
+	ppVS->SetShader();
+
+	//Extract bright areas to bloom target
+	ID3D11RenderTargetView* bloomRTV = bloomTarget->GetRTV();
+	context->OMSetRenderTargets(1, &bloomRTV, 0);
+	context->ClearRenderTargetView(bloomRTV, color);
+
+	SimplePixelShader* bloomPS = pixelShaders.find("bloomPS")->second;
+	bloomPS->SetShader();
+
+	bloomPS->SetFloat("clipValue", clipValue);
+	bloomPS->CopyAllBufferData();
+
+	bloomPS->SetShaderResourceView("BasePixels", baseTarget->GetSRV());
+	bloomPS->SetSamplerState("Sampler", ppSampler);
+
+	context->Draw(3, 0);
+
+	//Blur horizontally to bloomTarget2
+	ID3D11RenderTargetView* bloomRTV2 = bloomTarget2->GetRTV();
+	context->OMSetRenderTargets(1, &bloomRTV2, 0);
+	context->ClearRenderTargetView(bloomRTV2, color);
+
+	SimplePixelShader* blurPS = pixelShaders.find("blurPS")->second;
+	blurPS->SetShader();
+
+	blurPS->SetFloat2("passDir", horizontDir);
+	blurPS->SetFloat("pixelWidth", 1.0f / width);
+	blurPS->SetFloat("pixelHeight", 1.0f / height);
+	blurPS->CopyAllBufferData();
+
+	blurPS->SetShaderResourceView("BasePixels", bloomTarget->GetSRV());
+	blurPS->SetSamplerState("Sampler", ppSampler);
+
+	context->Draw(3, 0);
+
+	//Turn off srvs to prevent DX errors
+	context->PSSetShaderResources(0, 16, nullSRVs);
+
+	//Blur vertically back to bloomTarget
+	context->OMSetRenderTargets(1, &bloomRTV, 0);
+	context->ClearRenderTargetView(bloomRTV, color);
+
+	blurPS->SetFloat2("passDir", verticalDir);
+	blurPS->CopyAllBufferData();
+
+	blurPS->SetShaderResourceView("BasePixels", bloomTarget2->GetSRV());
+	blurPS->SetSamplerState("Sampler", ppSampler);
+
+	context->Draw(3, 0);
+
+	//End Postprocessing
+
+	//Set OMRTV to back buffer for final draw
+	context->OMSetRenderTargets(1, &backBufferRTV, depthStencilView);
+	context->ClearRenderTargetView(backBufferRTV, color);
+	context->ClearDepthStencilView(depthStencilView, D3D11_CLEAR_DEPTH, 1.0f, 0);
+
+	//Set post-processing shaders and variables
+	SimplePixelShader* ppPS = pixelShaders.find("PPPS")->second;
+
+	ppVS->SetShader();
+	ppPS->SetShader();
+
+	ppPS->SetShaderResourceView("BasePixels", baseTarget->GetSRV());
+	ppPS->SetShaderResourceView("LightBloom", bloomTarget->GetSRV());
+	ppPS->SetSamplerState("Sampler", ppSampler);
+
+	//Draw to back buffer
+	context->Draw(3, 0);
+}
+
 
 #pragma region Mouse Input
 
@@ -651,6 +757,8 @@ void Game::OnMouseDown(WPARAM buttonState, int x, int y)
 	// events even if the mouse leaves the window.  we'll be
 	// releasing the capture once a mouse button is released
 	SetCapture(hWnd);
+	postProcessing = !postProcessing;
+
 }
 
 // --------------------------------------------------------

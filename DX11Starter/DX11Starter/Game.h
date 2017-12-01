@@ -39,6 +39,7 @@ public:
 	void DrawScene(float deltaTime, float totalTime);
 	void SetAdditiveBlending();
 	void ClearBlending();
+	void DrawPostProcessing();
 
 	// Overridden mouse input helper methods
 	void OnMouseDown (WPARAM buttonState, int x, int y);
@@ -74,16 +75,21 @@ private:
 
 	// Particle stuff
 	ID3D11ShaderResourceView* fire;
-	SimpleVertexShader* particleVS;
-	SimplePixelShader* particlePS;
 	ID3D11DepthStencilState* particleDepthState;
 	ID3D11BlendState* additiveBlendState;
 	ParticleEmitter* leftThruster;
 	ParticleEmitter* rightThruster;
 
-	//Postprocessing objects
+	//Postprocessing data
+	bool postProcessing = true;
 	DXRenderTarget* baseTarget; //Render scene to here (pre-postprocessing)
 	DXRenderTarget* bloomTarget; //Render light bloom effects to here
+	DXRenderTarget* bloomTarget2;
+	float clipValue = 0.72f;
+	float verticalDir[2] = { 0.0f, 1.0f };
+	float horizontDir[2] = { 1.0f, 0.0f };
+
+	ID3D11ShaderResourceView* nullSRVs[16] = {};
 
 	// Keeps track of the old mouse position.  Useful for 
 	// determining how far the mouse moved in a single frame.
