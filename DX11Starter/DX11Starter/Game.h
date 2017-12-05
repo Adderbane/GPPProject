@@ -17,6 +17,8 @@
 #include "Skybox.h"
 #include "ParticleEmitter.h"
 #include <vector>
+#include "SpriteBatch.h"
+#include "SpriteFont.h"
 
 using namespace std;
 
@@ -37,6 +39,7 @@ public:
 	void Draw(float deltaTime, float totalTime);
 	void DrawSkybox(Skybox* sky);
 	void DrawScene(float deltaTime, float totalTime);
+	void DrawScore();
 	void SetAdditiveBlending();
 	void ClearBlending();
 	void DrawPostProcessing();
@@ -90,6 +93,11 @@ private:
 	float horizontDir[2] = { 1.0f, 0.0f };
 
 	ID3D11ShaderResourceView* nullSRVs[16] = {};
+
+	//UI stuff
+	int score = 0;
+	SpriteBatch* spriteBatch;
+	SpriteFont* spriteFont;
 
 	// Keeps track of the old mouse position.  Useful for 
 	// determining how far the mouse moved in a single frame.

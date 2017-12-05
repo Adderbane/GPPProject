@@ -3,6 +3,7 @@
 #include "WICTextureLoader.h"
 #include "DDSTextureLoader.h"
 #include <math.h>
+#include <string>
 
 // For the DirectX Math library
 using namespace DirectX;
@@ -95,6 +96,10 @@ Game::~Game()
 
 	//Clean up camera
 	delete camera;
+
+	//Clean up UI
+	delete spriteBatch;
+	delete spriteFont;
 
 	// Delete our simple shader objects, which
 	// will clean up their own internal DirectX stuff
@@ -267,6 +272,10 @@ void Game::LoadResources()
 	meshes.insert(pair<char*, Mesh*>("sphere", new Mesh("Assets/Models/sphere.obj", device)));
 	meshes.insert(pair<char*, Mesh*>("player", new Mesh("Assets/Models/SharpClawRacer.obj", device)));
 	meshes.insert(pair<char*, Mesh*>("enemy1", new Mesh("Assets/Models/Enemy.obj", device)));
+
+	//Load font for UI
+	spriteBatch = new SpriteBatch(context);
+	spriteFont = new SpriteFont(device, L"Assets/Arial.spritefont");
 }
 
 void Game::PrepPostProcessing()
@@ -512,6 +521,7 @@ void Game::CheckForCollisions(vector<Entity*> l1, vector<Entity*> l2)
 					if (distV < pow((e1->GetRadius() + e2->GetRadius()), 2)) {
 						e1->Collides();
 						e2->Collides();
+						score++;
 					}
 				}
 			}
@@ -560,6 +570,8 @@ void Game::Draw(float deltaTime, float totalTime)
 
 	//Turn off srvs to prevent DX errors
 	context->PSSetShaderResources(0, 16, nullSRVs);
+
+	DrawScore();
 
 	// Present the back buffer to the user
 	//  - Puts the final frame we're drawing into the window so the user can see it
@@ -737,6 +749,19 @@ void Game::DrawPostProcessing()
 	context->Draw(3, 0);
 }
 
+void Game::DrawScore()
+{
+	wstring scoreText = L"SCORE: " + to_wstring(score);
+	spriteBatch->Begin();
+	spriteFont->DrawString(spriteBatch, scoreText.c_str(), XMFLOAT2(10.0f, (float)height - 50.0f));
+	spriteBatch->End();
+
+	// Reset any and all render states that sprite batch has changed
+	float blendFactors[4] = { 1,1,1,1 };
+	context->OMSetBlendState(0, blendFactors, 0xFFFFFFFF);
+	context->RSSetState(0);
+	context->OMSetDepthStencilState(0, 0);
+}
 
 #pragma region Mouse Input
 
