@@ -47,7 +47,8 @@ void Target::Draw(ID3D11DeviceContext* context, Camera* camera, LightManager* li
 	pShader->SetData("lightList", &lightArray, sizeof(PointLight) * 32);
 	pShader->SetData("pointLightCount", &lightCount, sizeof(int));
 	pShader->SetData("cameraPosition", &(camera->GetCamPosition()), sizeof(XMFLOAT3));
-	pShader->SetShaderResourceView("diffuseTexture", GetMaterial()->GetSRV());
+	pShader->SetShaderResourceView("diffuseTexture", GetMaterial()->GetTexture());
+	pShader->SetShaderResourceView("normalMap", GetMaterial()->GetNormal());
 	pShader->SetSamplerState("basicSampler", GetMaterial()->GetSampler());
 
 	vShader->CopyAllBufferData();

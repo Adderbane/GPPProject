@@ -29,7 +29,7 @@ void Camera::Update(float deltaTime, float totalTime, XMFLOAT3 playerPosition)
 	camInPlayerPlane = XMVectorAdd(camInPlayerPlane, XMVectorSet(0.0f, 0.0f, 4.0f, 0.0f));
 	XMVECTOR playerDirection = XMLoadFloat3(&playerPosition) - camInPlayerPlane;
 	
-	XMVECTOR lookDir = XMVector4Normalize(XMVectorAdd(XMVectorScale(playerDirection, 0.2), camInPlayerPlane) - XMLoadFloat3(&camPosition));
+	XMVECTOR lookDir = XMVector4Normalize(XMVectorAdd(XMVectorScale(playerDirection, 0.2f), camInPlayerPlane) - XMLoadFloat3(&camPosition));
 	XMVECTOR upDir = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
 	XMVECTOR position = XMLoadFloat3(&camPosition);
 	

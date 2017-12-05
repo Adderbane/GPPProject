@@ -31,6 +31,7 @@ private:
 
 	//Helpers
 	void CreateBuffers(Vertex verticies[], int vertexCount, unsigned int indices[], int indexCount, ID3D11Device* device);
+	void CalculateTangents(Vertex* verts, int numVerts, unsigned int* indices, int numIndices);
 	void CalcSphere(Vertex verticies[], int vertexCount);
 };
 

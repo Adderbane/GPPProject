@@ -85,10 +85,8 @@ Game::~Game()
 
 	//Get rid of particle stuff
 	fire->Release();
-	particleBlendState->Release();
+	additiveBlendState->Release();
 	particleDepthState->Release();
-	delete particleVS;
-	delete particlePS;
 
 	//Clean up render targets
 	delete baseTarget;
@@ -149,6 +147,14 @@ void Game::LoadResources()
 	pixelShader->LoadShaderFile(L"PixelShader.cso");
 	pixelShaders.insert(pair<char*, SimplePixelShader*>("basicPixelShader", pixelShader));
 
+	SimpleVertexShader* shipVS = new SimpleVertexShader(device, context);
+	shipVS->LoadShaderFile(L"ShipVS.cso");
+	vertexShaders.insert(pair<char*, SimpleVertexShader*>("shipVS", shipVS));
+
+	SimplePixelShader* shipPS = new SimplePixelShader(device, context);
+	shipPS->LoadShaderFile(L"ShipPS.cso");
+	pixelShaders.insert(pair<char*, SimplePixelShader*>("shipPS", shipPS));
+
 	SimpleVertexShader* skyboxVS = new SimpleVertexShader(device, context);
 	skyboxVS->LoadShaderFile(L"SkyboxVS.cso");
 	vertexShaders.insert(pair<char*, SimpleVertexShader*>("skyboxVS", skyboxVS));
@@ -173,7 +179,6 @@ void Game::LoadResources()
 	PPPS->LoadShaderFile(L"PPPS.cso");
 	pixelShaders.insert(pair<char*, SimplePixelShader*>("PPPS", PPPS));
 
-
 	SimplePixelShader* bloomPS = new SimplePixelShader(device, context);
 	bloomPS->LoadShaderFile(L"BloomPS.cso");
 	pixelShaders.insert(pair<char*, SimplePixelShader*>("bloomPS", bloomPS));
@@ -182,11 +187,13 @@ void Game::LoadResources()
 	blurPS->LoadShaderFile(L"BlurPS.cso");
 	pixelShaders.insert(pair<char*, SimplePixelShader*>("blurPS", blurPS));
 
-	particleVS = new SimpleVertexShader(device, context);
+	SimpleVertexShader* particleVS = new SimpleVertexShader(device, context);
 	particleVS->LoadShaderFile(L"ParticleVS.cso");
+	vertexShaders.insert(pair<char*, SimpleVertexShader*>("particleVS", particleVS));
 
-	particlePS = new SimplePixelShader(device, context);
+	SimplePixelShader* particlePS = new SimplePixelShader(device, context);
 	particlePS->LoadShaderFile(L"ParticlePS.cso");
+	pixelShaders.insert(pair<char*, SimplePixelShader*>("particlePS", particlePS));
 
 	//Load textures
 	ID3D11ShaderResourceView* wood = 0;
@@ -210,7 +217,7 @@ void Game::LoadResources()
 	CreateWICTextureFromFile(device, context, L"Assets/Textures/EnemyNormal.png", 0, &enemyNorm);
 
 	ID3D11ShaderResourceView* sky = 0;
-	CreateDDSTextureFromFile(device, L"Assets/Textures/Space.dds", 0, &sky);
+	CreateDDSTextureFromFile(device, L"Assets/Textures/space2.dds", 0, &sky);
 
 	//Create sampler state
 	D3D11_SAMPLER_DESC samplerDesc;
@@ -236,8 +243,8 @@ void Game::LoadResources()
 	materials.insert(pair<char*, Material*>("wood", new Material(vertexShaders.find("basicVertexShader")->second, pixelShaders.find("basicPixelShader")->second, wood, sampler)));
 	materials.insert(pair<char*, Material*>("metal", new Material(vertexShaders.find("basicVertexShader")->second, pixelShaders.find("basicPixelShader")->second, metal, sampler)));
 	materials.insert(pair<char*, Material*>("marble", new Material(vertexShaders.find("basicVertexShader")->second, pixelShaders.find("basicPixelShader")->second, marble, sampler)));
-	materials.insert(pair<char*, Material*>("playerTex", new Material(vertexShaders.find("basicVertexShader")->second, pixelShaders.find("basicPixelShader")->second, playerTex, sampler)));
-	materials.insert(pair<char*, Material*>("enemy1", new Material(vertexShaders.find("basicVertexShader")->second, pixelShaders.find("basicPixelShader")->second, enemy1, sampler)));
+	materials.insert(pair<char*, Material*>("playerTex", new Material(vertexShaders.find("shipVS")->second, pixelShaders.find("shipPS")->second, playerTex, playerNorm, sampler)));
+	materials.insert(pair<char*, Material*>("enemy1", new Material(vertexShaders.find("shipVS")->second, pixelShaders.find("shipPS")->second, enemy1, enemyNorm, sampler)));
 	materials.insert(pair<char*, Material*>("sky", new Material(vertexShaders.find("skyboxVS")->second, pixelShaders.find("skyboxPS")->second, sky, sampler)));
 	materials.insert(pair<char*, Material*>("bullet", new Material(vertexShaders.find("bulletVS")->second, pixelShaders.find("bulletPS")->second, marble, sampler)));
 
@@ -246,7 +253,9 @@ void Game::LoadResources()
 	metal->Release();
 	marble->Release();
 	playerTex->Release();
+	playerNorm->Release();
 	enemy1->Release();
+	enemyNorm->Release();
 	sky->Release();
 	sampler->Release();
 
@@ -371,7 +380,7 @@ void Game::SetupGameWorld()
 	blend.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_ONE;
 	blend.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_ONE;
 	blend.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
-	device->CreateBlendState(&blend, &particleBlendState);
+	device->CreateBlendState(&blend, &additiveBlendState);
 
 	// Set up particles
 	leftThruster = new ParticleEmitter(
@@ -386,8 +395,8 @@ void Game::SetupGameWorld()
 		XMFLOAT3(0, 0, 0),				// Start position
 		XMFLOAT3(0, 0, -5),				// Start acceleration
 		device,
-		particleVS,
-		particlePS,
+		vertexShaders.find("particleVS")->second,
+		pixelShaders.find("particlePS")->second,
 		fire);
 
 	rightThruster = new ParticleEmitter(
@@ -402,8 +411,8 @@ void Game::SetupGameWorld()
 		XMFLOAT3(0, 0, 0),				// Start position
 		XMFLOAT3(0, 0, -5),				// Start acceleration
 		device,
-		particleVS,
-		particlePS,
+		vertexShaders.find("particleVS")->second,
+		pixelShaders.find("particlePS")->second,
 		fire);
 }
 
@@ -550,7 +559,6 @@ void Game::Draw(float deltaTime, float totalTime)
 	}
 
 	//Turn off srvs to prevent DX errors
-	ID3D11ShaderResourceView* nullSRVs[16] = {};
 	context->PSSetShaderResources(0, 16, nullSRVs);
 
 	// Present the back buffer to the user
@@ -582,16 +590,31 @@ void Game::DrawScene(float deltaTime, float totalTime)
 	//Draw Skybox next to last
 	DrawSkybox(skybox);
 
-	// Set up additive blending for thrusters
-	float blend[4] = { 1,1,1,1 };
-	context->OMSetBlendState(particleBlendState, blend, 0xffffffff);  // Additive blending
-	context->OMSetDepthStencilState(particleDepthState, 0);			// No depth WRITING
+	//Draw Particles! This is a three step process, so here's what you do:
+	//Step 1: Set up your first blend state, like additive blending
+	SetAdditiveBlending();
 	
-	// Draw the emitters
+	//Step 2: Draw the emitters using that blend state
 	leftThruster->Draw(context, camera);
 	rightThruster->Draw(context, camera);
 
+	//Repeat steps 1 & 2 for other blending states
+
+	//Step 3: Reset to default states for next frame
+	ClearBlending();
+}
+
+void Game::SetAdditiveBlending()
+{
+	float blend[4] = { 1,1,1,1 };
+	context->OMSetBlendState(additiveBlendState, blend, 0xffffffff);  // Additive blending
+	context->OMSetDepthStencilState(particleDepthState, 0);			// No depth WRITING
+}
+
+void Game::ClearBlending()
+{
 	// Reset to default states for next frame
+	float blend[4] = { 1,1,1,1 };
 	context->OMSetBlendState(0, blend, 0xffffffff);
 	context->OMSetDepthStencilState(0, 0);
 }
@@ -611,7 +634,7 @@ void Game::DrawSkybox(Skybox* sky)
 	vShader->SetMatrix4x4("view", camera->GetView());
 	vShader->SetMatrix4x4("projection", camera->GetProj());
 	
-	pShader->SetShaderResourceView("skyboxTexture", material->GetSRV());
+	pShader->SetShaderResourceView("skyboxTexture", material->GetTexture());
 	pShader->SetSamplerState("basicSampler", material->GetSampler());
 
 	//Copy data
@@ -677,6 +700,9 @@ void Game::DrawPostProcessing()
 	blurPS->SetSamplerState("Sampler", ppSampler);
 
 	context->Draw(3, 0);
+
+	//Turn off srvs to prevent DX errors
+	context->PSSetShaderResources(0, 16, nullSRVs);
 
 	//Blur vertically back to bloomTarget
 	context->OMSetRenderTargets(1, &bloomRTV, 0);

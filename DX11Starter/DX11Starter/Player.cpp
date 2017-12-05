@@ -6,10 +6,10 @@ Player::Player(Mesh* mesh, Material* material) : Entity(mesh, material)
 {
 	this->SetActive(true);
 	this->SetRotation(-1.0f * XM_PIDIV2, XM_PI, 0.0f);
-	accelRate = 0.2;
-	decelRate = 0.09;
+	accelRate = 0.2f;
+	decelRate = 0.09f;
 	velocity = XMFLOAT3(0, 0, 0);
-	maxVelocity = 0.8;
+	maxVelocity = 0.8f;
 	xCap = 4.0f;
 	yCap = 2.0f;
 
@@ -57,12 +57,13 @@ void Player::Update(float deltaTime, float totalTime)
 		velocity.y *= accelRate/1000;
 	}
 	this->SetPosition(pos.x, pos.y, GetPosition().z);
-	this->SetRotation(-1.0f * XM_PIDIV2 + 5 * velocity.y, XM_PI + 5 * velocity.x, 0.0f);
+	//this->SetRotation(-1.0f * XM_PIDIV2 + 5 * velocity.y, XM_PI + 5 * velocity.x, 0.0f);
 	XMFLOAT3 rot = GetRotation();
 	XMMATRIX rotM = XMMatrixRotationRollPitchYaw(rot.x, rot.y, rot.z);
 	//XMVECTOR enginePos = XMLoadFloat3(&engineOffset);
 	XMFLOAT3 enginePos = engineOffset;
 	//enginePos = rotM * enginePos;
+
 	//Update Engine lights
 	leftEngine->Position = XMFLOAT3(pos.x - enginePos.x, pos.y + enginePos.y, pos.z + enginePos.z);
 	rightEngine->Position = XMFLOAT3(pos.x + enginePos.x, pos.y + enginePos.y, pos.z + enginePos.z);
@@ -100,7 +101,8 @@ void Player::Draw(ID3D11DeviceContext* context, Camera* camera, LightManager* li
 	pShader->SetData("lightList", &lightArray, sizeof(PointLight) * 32);
 	pShader->SetData("pointLightCount", &lightCount, sizeof(int));
 	pShader->SetData("cameraPosition", &(camera->GetCamPosition()), sizeof(XMFLOAT3));
-	pShader->SetShaderResourceView("diffuseTexture", GetMaterial()->GetSRV());
+	pShader->SetShaderResourceView("diffuseTexture", GetMaterial()->GetTexture());
+	pShader->SetShaderResourceView("normalMap", GetMaterial()->GetNormal());
 	pShader->SetSamplerState("basicSampler", GetMaterial()->GetSampler());
 
 	vShader->CopyAllBufferData();

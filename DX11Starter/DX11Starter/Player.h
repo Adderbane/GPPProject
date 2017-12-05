@@ -26,7 +26,7 @@ private:
 	float yCap;
 
 	XMFLOAT3 engineOffset;
-	PointLight* leftEngine;
-	PointLight* rightEngine;
+	PointLight* leftEngine = 0;
+	PointLight* rightEngine = 0;
 };
 
