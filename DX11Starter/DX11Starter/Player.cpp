@@ -37,24 +37,37 @@ Player::~Player()
 void Player::Update(float deltaTime, float totalTime)
 {
 	XMFLOAT3 pos = GetPosition();
+	
 	Entity::Update(deltaTime, totalTime);
 	this->Move(0, 0, 2.0f * deltaTime);
 	if (pos.x > xCap) {
 		pos.x = xCap;
+		velocity.x *= accelRate/1000;
 	}
 	if (pos.y > yCap) {
 		pos.y = yCap;
+		velocity.y *= accelRate/1000;
 	}
 	if (pos.x < -xCap) {
 		pos.x = -xCap;
+		velocity.x *= accelRate/1000;
 	}
 	if (pos.y < -yCap) {
 		pos.y = -yCap;
+		velocity.y *= accelRate/1000;
 	}
 	this->SetPosition(pos.x, pos.y, GetPosition().z);
+	this->SetRotation(-1.0f * XM_PIDIV2 + 5 * velocity.y, XM_PI + 5 * velocity.x, 0.0f);
+	XMFLOAT3 rot = GetRotation();
+	XMMATRIX rotM = XMMatrixRotationRollPitchYaw(rot.x, rot.y, rot.z);
+	//XMVECTOR enginePos = XMLoadFloat3(&engineOffset);
+	XMFLOAT3 enginePos = engineOffset;
+	//enginePos = rotM * enginePos;
 	//Update Engine lights
-	leftEngine->Position = XMFLOAT3(pos.x - engineOffset.x, pos.y + engineOffset.y, pos.z + engineOffset.z);
-	rightEngine->Position = XMFLOAT3(pos.x + engineOffset.x, pos.y + engineOffset.y, pos.z + engineOffset.z);
+	leftEngine->Position = XMFLOAT3(pos.x - enginePos.x, pos.y + enginePos.y, pos.z + enginePos.z);
+	rightEngine->Position = XMFLOAT3(pos.x + enginePos.x, pos.y + enginePos.y, pos.z + enginePos.z);
+	//Rotate ship
+
 }
 
 void Player::Draw(ID3D11DeviceContext* context, Camera* camera, LightManager* lightManager)

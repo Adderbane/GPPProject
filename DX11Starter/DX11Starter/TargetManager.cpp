@@ -4,12 +4,25 @@
 
 TargetManager::TargetManager(Mesh* mesh, Material* material)
 {
-	for (size_t i = 0; i < this->count; i++)
-	{
-		Entity* t = new Target(mesh, material);
-		t->SetPosition(0.0f, -1.0f, i * this->spacing);
-		t->SetActive(true);
-		targetList.push_back(t);
+	if (spawnFixed) {
+		for (size_t i = 0; i < this->count; i++)
+		{
+			Entity* t = new Target(mesh, material);
+			t->SetPosition(0.0f, -1.0f, i * this->spacing);
+			t->SetActive(true);
+			targetList.push_back(t);
+		}
+	}
+	else {
+		//spawn randomly
+		for (size_t i = 0; i < this->count; i++) {
+			Entity* t = new Target(mesh, material);
+			float spawnX = rand() % (int)(2 * xCap) - xCap;
+			float spawnY = rand() % (int)(2 * yCap) - yCap;
+			t->SetPosition(spawnX, spawnY, i * this->spacing);
+			t->SetActive(true);
+			targetList.push_back(t);
+		}
 	}
 }
 
