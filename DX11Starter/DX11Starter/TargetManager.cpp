@@ -2,11 +2,11 @@
 
 	
 
-TargetManager::TargetManager(Mesh* mesh, Material* material)
+TargetManager::TargetManager(Mesh* mesh, Material* material, ParticleEmitter* particle, ID3D11Device* device)
 {
 	for (size_t i = 0; i < this->count; i++)
 	{
-		Entity* t = new Target(mesh, material);
+		Entity* t = new Target(mesh, material, particle->Clone(device));
 		t->SetPosition(0.0f, -1.0f, i * this->spacing);
 		t->SetActive(true);
 		targetList.push_back(t);

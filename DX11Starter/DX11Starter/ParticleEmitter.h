@@ -41,9 +41,17 @@ public:
 		ID3D11Device* device,
 		SimpleVertexShader* vs,
 		SimplePixelShader* ps,
-		ID3D11ShaderResourceView* texture);
+		ID3D11ShaderResourceView* texture,
+		float emitterMaxLife);
 	~ParticleEmitter();
+
+	//Copy constructor, sort of
+	ParticleEmitter* Clone(ID3D11Device* device);
+
 	void Update(float dt);
+
+	bool IsActive();
+	void SetActive(bool active);
 
 	void UpdateSingleParticle(float dt, int index);
 	void SpawnParticle();
@@ -61,6 +69,9 @@ private:
 
 	int livingParticleCount;
 	float lifetime;
+	float emitterMaxLife;
+	float emitterLife;
+	bool active;
 
 	DirectX::XMFLOAT3 emitterAcceleration;
 	DirectX::XMFLOAT3 emitterPosition;

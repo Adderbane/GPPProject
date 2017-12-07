@@ -1,17 +1,22 @@
 #include "Target.h"
 
-Target::Target(Mesh* mesh, Material* material) : Entity(mesh, material)
+Target::Target(Mesh* mesh, Material* material, ParticleEmitter* particle) : Entity(mesh, material)
 {
+	this->emitter = particle;
+	this->emitter->SetActive(false);
 }
 
 Target::~Target()
 {
+	delete emitter;
 }
 
 void Target::Update(float deltaTime, float totalTime)
 {
 	if (this->IsActive() != true)
 	{
+		emitter->SetEmitterPosition(this->GetPosition());
+		emitter->Update(deltaTime);
 		return;
 	}
 }
@@ -57,7 +62,13 @@ void Target::Draw(ID3D11DeviceContext* context, Camera* camera, LightManager* li
 	Entity::Draw(context, camera, lightManager);
 }
 
+void Target::DrawEmitter(ID3D11DeviceContext * context, Camera * camera)
+{
+	emitter->Draw(context, camera);
+}
+
 void Target::Collides()
 {
+	this->emitter->SetActive(true);
 	this->SetActive(false);
 }

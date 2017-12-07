@@ -2,13 +2,14 @@
 
 #include<vector>
 #include"Target.h"
+#include"ParticleEmitter.h"
 
 using namespace std;
 
 class TargetManager
 {
 public:
-	TargetManager(Mesh* mesh, Material* material);
+	TargetManager(Mesh* mesh, Material* material, ParticleEmitter* particle, ID3D11Device* device);
 	~TargetManager();
 
 	vector<Entity*> GetTargets();
