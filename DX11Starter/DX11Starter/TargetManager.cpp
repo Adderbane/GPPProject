@@ -4,6 +4,7 @@
 
 TargetManager::TargetManager(Mesh* mesh, Material* material, ParticleEmitter* particle, ID3D11Device* device)
 {
+
 	if (spawnFixed) {
 		for (size_t i = 0; i < this->count; i++)
 		{

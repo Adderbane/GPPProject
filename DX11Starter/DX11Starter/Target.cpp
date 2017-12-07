@@ -4,6 +4,14 @@ Target::Target(Mesh* mesh, Material* material, ParticleEmitter* particle) : Enti
 {
 	this->emitter = particle;
 	this->emitter->SetActive(false);
+	
+	PointLight* e = new PointLight();
+	e->AmbientColor = XMFLOAT4(0.01f, 0.00f, 0.00f, 0.0f);
+	e->DiffuseColor = XMFLOAT4(1.0f, 0.0f, 0.0f, 0.0f);
+	e->SpecularColor = XMFLOAT4(0.5f, 0.5f, 0.5f, 0.0f);
+	e->Position = this->GetPosition();
+	e->Radius = 0.1f;
+	this->engine = e;
 }
 
 Target::~Target()
@@ -17,8 +25,16 @@ void Target::Update(float deltaTime, float totalTime)
 	{
 		emitter->SetEmitterPosition(this->GetPosition());
 		emitter->Update(deltaTime);
+		if (!emitter->IsActive())
+		{
+			engine->Radius = 0.0f;
+		}
 		return;
 	}
+
+	engine->Radius = 0.1f;
+	engine->Position = this->GetPosition();
+	engine->Position.z = this->GetPosition().z + this->GetRadius();
 }
 
 void Target::Draw(ID3D11DeviceContext* context, Camera* camera, LightManager* lightManager)
@@ -29,7 +45,7 @@ void Target::Draw(ID3D11DeviceContext* context, Camera* camera, LightManager* li
 	}
 
 	//Get array of PointLights
-	PointLight lightArray[32] = {};
+	PointLight lightArray[64] = {};
 	for (size_t i = 0; i < lightManager->pointLights.size(); i++)
 	{
 		lightArray[i] = *(lightManager->pointLights[i]);
@@ -49,7 +65,7 @@ void Target::Draw(ID3D11DeviceContext* context, Camera* camera, LightManager* li
 	vShader->SetMatrix4x4("normalWorld", GetNormalWorld());
 
 	pShader->SetData("dirLight", &(lightManager->dirLight), sizeof(DirectionalLight));
-	pShader->SetData("lightList", &lightArray, sizeof(PointLight) * 32);
+	pShader->SetData("lightList", &lightArray, sizeof(PointLight) * 64);
 	pShader->SetData("pointLightCount", &lightCount, sizeof(int));
 	pShader->SetData("cameraPosition", &(camera->GetCamPosition()), sizeof(XMFLOAT3));
 	pShader->SetShaderResourceView("diffuseTexture", GetMaterial()->GetTexture());
@@ -71,4 +87,9 @@ void Target::Collides()
 {
 	this->emitter->SetActive(true);
 	this->SetActive(false);
+}
+
+PointLight* Target::GetEngine()
+{
+	return engine;
 }

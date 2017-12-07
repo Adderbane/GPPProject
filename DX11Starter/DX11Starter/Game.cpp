@@ -346,6 +346,7 @@ void Game::SetupGameWorld()
 	for each (Entity* e in targetManager->GetTargets())
 	{
 		entities.push_back(e);
+		lightManager->pointLights.push_back(((Target*) e)->GetEngine());
 	}
 
 	//Make player

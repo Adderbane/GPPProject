@@ -12,8 +12,11 @@ public:
 	void Draw(ID3D11DeviceContext* context, Camera* camera, LightManager* lightManager) override;
 	void DrawEmitter(ID3D11DeviceContext* context, Camera* camera);
 	void Collides() override;
+
+	PointLight* GetEngine();
 private:
 	ParticleEmitter* emitter;
+	PointLight* engine;
 };
 
 

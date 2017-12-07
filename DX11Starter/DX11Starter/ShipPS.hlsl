@@ -28,7 +28,7 @@ struct PointLight {
 cbuffer externalData : register(b0)
 {
 	DirectionalLight dirLight;
-	PointLight lightList[32];
+	PointLight lightList[64];
 	int pointLightCount;
 	float4 cameraPosition;
 };
