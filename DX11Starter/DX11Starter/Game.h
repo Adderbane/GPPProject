@@ -84,6 +84,7 @@ private:
 	ID3D11BlendState* additiveBlendState;
 	ParticleEmitter* leftThruster;
 	ParticleEmitter* rightThruster;
+	ParticleEmitter* smoke;
 
 	//Postprocessing data
 	bool postProcessing = true;

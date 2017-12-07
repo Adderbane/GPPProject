@@ -323,8 +323,26 @@ void Game::SetupGameWorld()
 	lightManager = new LightManager();
 	skybox = new Skybox();
 
+	//Create smoke for targets
+	smoke = new ParticleEmitter(
+		500,							// Max particles
+		50,							// Particles per second
+		0.5f,								// Particle lifetime
+		1,							// Start size
+		0.1f,							// End size
+		XMFLOAT4(1, 0.5f, 0, 0.6f),	// Start color
+		XMFLOAT4(0, 0, 0, 0.5f),		// End color
+		XMFLOAT3(0, 1, 0),				// Start velocity
+		XMFLOAT3(0, 0, 0),				// Start position
+		XMFLOAT3(0, 2, 0),				// Start acceleration
+		device,
+		vertexShaders.find("particleVS")->second,
+		pixelShaders.find("particlePS")->second,
+		fire,
+		2);
+
 	//Make target field
-	targetManager = new TargetManager(meshes.find("enemy1")->second, materials.find("enemy1")->second);
+	targetManager = new TargetManager(meshes.find("enemy1")->second, materials.find("enemy1")->second, smoke, device);
 	for each (Entity* e in targetManager->GetTargets())
 	{
 		entities.push_back(e);
@@ -422,23 +440,10 @@ void Game::SetupGameWorld()
 		device,
 		vertexShaders.find("particleVS")->second,
 		pixelShaders.find("particlePS")->second,
-		fire);
+		fire,
+		NULL);
 
-	rightThruster = new ParticleEmitter(
-		500,							// Max particles
-		50,							// Particles per second
-		0.5f,								// Particle lifetime
-		0.2f,							// Start size
-		0.1f,							// End size
-		XMFLOAT4(0, 0.5f, 1, 0.6f),	// Start color
-		XMFLOAT4(0, 0.5f, 1, 0.2f),		// End color
-		XMFLOAT3(0, 0, -1),				// Start velocity
-		XMFLOAT3(0, 0, 0),				// Start position
-		XMFLOAT3(0, 0, -5),				// Start acceleration
-		device,
-		vertexShaders.find("particleVS")->second,
-		pixelShaders.find("particlePS")->second,
-		fire);
+	rightThruster = leftThruster->Clone(device);
 }
 
 
@@ -632,6 +637,10 @@ void Game::DrawScene(float deltaTime, float totalTime)
 	//Step 2: Draw the emitters using that blend state
 	leftThruster->Draw(context, camera);
 	rightThruster->Draw(context, camera);
+	for (size_t i = 0; i < targetManager->GetTargets().size(); i++)
+	{
+		((Target*)targetManager->GetTargets()[i])->DrawEmitter(context, camera);
+	}
 
 	//Repeat steps 1 & 2 for other blending states
 

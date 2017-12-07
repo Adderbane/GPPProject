@@ -15,7 +15,8 @@ ParticleEmitter::ParticleEmitter(
 	ID3D11Device* device,
 	SimpleVertexShader* vs,
 	SimplePixelShader* ps,
-	ID3D11ShaderResourceView* texture
+	ID3D11ShaderResourceView* texture,
+	float emitterMaxLife
 )
 {
 	// Save params
@@ -35,6 +36,9 @@ ParticleEmitter::ParticleEmitter(
 
 	this->emitterPosition = emitterPosition;
 	this->emitterAcceleration = emitterAcceleration;
+	this->emitterMaxLife = emitterMaxLife;
+	this->emitterLife = 0;
+	this->active = true;
 
 	timeSinceEmit = 0;
 	livingParticleCount = 0;
@@ -100,45 +104,85 @@ ParticleEmitter::~ParticleEmitter()
 	indexBuffer->Release();
 }
 
+ParticleEmitter * ParticleEmitter::Clone(ID3D11Device * device)
+{
+	return new ParticleEmitter(this->maxParticles, 
+		this->particlesPerSecond, 
+		this->lifetime, 
+		this->startSize, 
+		this->endSize, 
+		this->startColor, 
+		this->endColor, 
+		this->startVelocity,
+		this->emitterPosition,
+		this->emitterAcceleration,
+		device,
+		this->vs,
+		this->ps,
+		this->texture,
+		this->emitterMaxLife);
+}
+
 void ParticleEmitter::Update(float dt)
 {
-	// Update all particles - Check cyclic buffer first
-	if (firstAliveIndex < firstDeadIndex)
-	{
-		// First alive is BEFORE first dead, so the "living" particles are contiguous
-		// 
-		// 0 -------- FIRST ALIVE ----------- FIRST DEAD -------- MAX
-		// |    dead    |            alive       |         dead    |
+	//if we have an active particle emitter, or the particle emitter is infinite, update it
+	if (this->active) {
+		this->emitterLife += dt;
 
-		// First alive is before first dead, so no wrapping
-		for (int i = firstAliveIndex; i < firstDeadIndex; i++)
-			UpdateSingleParticle(dt, i);
+		if (this->emitterMaxLife != NULL && this->emitterLife >= this->emitterMaxLife)
+		{
+			active = false;
+			return;
+		}
+
+		// Update all particles - Check cyclic buffer first
+		if (firstAliveIndex < firstDeadIndex)
+		{
+			// First alive is BEFORE first dead, so the "living" particles are contiguous
+			// 
+			// 0 -------- FIRST ALIVE ----------- FIRST DEAD -------- MAX
+			// |    dead    |            alive       |         dead    |
+
+			// First alive is before first dead, so no wrapping
+			for (int i = firstAliveIndex; i < firstDeadIndex; i++)
+				UpdateSingleParticle(dt, i);
+		}
+		else
+		{
+			// First alive is AFTER first dead, so the "living" particles wrap around
+			// 
+			// 0 -------- FIRST DEAD ----------- FIRST ALIVE -------- MAX
+			// |    alive    |            dead       |         alive   |
+
+			// Update first half (from firstAlive to max particles)
+			for (int i = firstAliveIndex; i < maxParticles; i++)
+				UpdateSingleParticle(dt, i);
+
+			// Update second half (from 0 to first dead)
+			for (int i = 0; i < firstDeadIndex; i++)
+				UpdateSingleParticle(dt, i);
+		}
+
+		// Add to the time
+		timeSinceEmit += dt;
+
+		// Enough time to emit?
+		while (timeSinceEmit > secondsPerParticle)
+		{
+			SpawnParticle();
+			timeSinceEmit -= secondsPerParticle;
+		}
 	}
-	else
-	{
-		// First alive is AFTER first dead, so the "living" particles wrap around
-		// 
-		// 0 -------- FIRST DEAD ----------- FIRST ALIVE -------- MAX
-		// |    alive    |            dead       |         alive   |
+}
 
-		// Update first half (from firstAlive to max particles)
-		for (int i = firstAliveIndex; i < maxParticles; i++)
-			UpdateSingleParticle(dt, i);
+bool ParticleEmitter::IsActive()
+{
+	return active;
+}
 
-		// Update second half (from 0 to first dead)
-		for (int i = 0; i < firstDeadIndex; i++)
-			UpdateSingleParticle(dt, i);
-	}
-
-	// Add to the time
-	timeSinceEmit += dt;
-
-	// Enough time to emit?
-	while (timeSinceEmit > secondsPerParticle)
-	{
-		SpawnParticle();
-		timeSinceEmit -= secondsPerParticle;
-	}
+void ParticleEmitter::SetActive(bool active)
+{
+	this->active = active;
 }
 
 void ParticleEmitter::UpdateSingleParticle(float dt, int index)
@@ -260,6 +304,10 @@ void ParticleEmitter::CopyOneParticle(int index)
 
 void ParticleEmitter::Draw(ID3D11DeviceContext * context, Camera * camera)
 {
+	if (!this->active)
+	{
+		return;
+	}
 	// Copy to dynamic buffer
 	CopyParticlesToGPU(context);
 

@@ -2,12 +2,12 @@
 
 	
 
-TargetManager::TargetManager(Mesh* mesh, Material* material)
+TargetManager::TargetManager(Mesh* mesh, Material* material, ParticleEmitter* particle, ID3D11Device* device)
 {
 	if (spawnFixed) {
 		for (size_t i = 0; i < this->count; i++)
 		{
-			Entity* t = new Target(mesh, material);
+			Entity* t = new Target(mesh, material, particle->Clone(device));
 			t->SetPosition(0.0f, -1.0f, i * this->spacing);
 			t->SetActive(true);
 			targetList.push_back(t);
@@ -16,7 +16,7 @@ TargetManager::TargetManager(Mesh* mesh, Material* material)
 	else {
 		//spawn randomly
 		for (size_t i = 0; i < this->count; i++) {
-			Entity* t = new Target(mesh, material);
+			Entity* t = new Target(mesh, material, particle->Clone(device));
 			float spawnX = rand() % (int)(2 * xCap) - xCap;
 			float spawnY = rand() % (int)(2 * yCap) - yCap;
 			t->SetPosition(spawnX, spawnY, i * this->spacing);
