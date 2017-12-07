@@ -28,7 +28,7 @@ float4 main(VertexToPixel input) : SV_TARGET
 
 	for (int i = 0; i < 15; i++)
 	{
-		float2 uv = input.uv + (i-7) * float2(passDir.x * pixelWidth * 4.0f, passDir.y * pixelHeight * 4.0f);
+		float2 uv = input.uv + (i-7) * float2(passDir.x * pixelWidth * 2.0f, passDir.y * pixelHeight * 2.0f);
 		
 		finalColor += blurWeights[i] * BasePixels.Sample(Sampler, uv);
 	}

@@ -12,10 +12,9 @@ struct VertexToPixel
 	//  |    |                |
 	//  v    v                v
 	float4 position		: SV_POSITION;
-	float3 normal       : NORMAL;
 	float2 uv           : TEXTCOORD;
 	float3 worldPos     : POSITION;
-	float3 tangent		: TANGENT;
+
 };
 
 struct DirectionalLight {
@@ -41,10 +40,7 @@ struct PointLight {
 // - The name of the cbuffer itself is unimportant
 cbuffer externalData : register(b0)
 {
-	DirectionalLight dirLight;
-	PointLight lightList[32];
-	int pointLightCount;
-	float4 cameraPosition;
+
 };
 
 Texture2D diffuseTexture : register(t0);
@@ -96,14 +92,5 @@ float4 main(VertexToPixel input) : SV_TARGET
 {
 	float4 surfaceColor = diffuseTexture.Sample(basicSampler, input.uv);
 
-	float4 light = 0.0f;
-
-	light += calcDirLight(dirLight, input.normal);
-
-	for (int i = 0; i < pointLightCount; i++)
-	{
-		light += calcPointLight(lightList[i], input.worldPos, input.normal);
-	}
-
-	return surfaceColor * light;
+	return surfaceColor;
 }

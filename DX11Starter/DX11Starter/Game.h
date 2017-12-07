@@ -15,6 +15,7 @@
 #include "LightManager.h"
 #include "Bullet.h"
 #include "Skybox.h"
+#include "Reticule.h"
 #include "ParticleEmitter.h"
 #include <vector>
 #include "SpriteBatch.h"
@@ -62,6 +63,7 @@ private:
 	TargetManager* targetManager;
 	LightManager* lightManager;
 	Player* player;
+	Reticule* reticule;
 	Skybox* skybox;
 
 	//Resource Collections

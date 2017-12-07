@@ -10,7 +10,6 @@ cbuffer externalData : register(b0)
 	matrix world;
 	matrix view;
 	matrix projection;
-	matrix normalWorld;
 };
 
 // Struct representing a single vertex worth of data
@@ -44,10 +43,8 @@ struct VertexToPixel
 	//  |    |                |
 	//  v    v                v
 	float4 position		: SV_POSITION;	// XYZW position (System Value Position)
-	float3 normal       : NORMAL;
 	float2 uv           : TEXTCOORD;
 	float4 worldPos		: POSITION;
-	float3 tangent      : TANGENT;
 };
 
 // --------------------------------------------------------
@@ -79,10 +76,6 @@ VertexToPixel main( VertexShaderInput input )
 	// Also copy coordinate in worldspace for lighting calculations
 	output.worldPos = mul(float4(input.position, 1.0f), world);
 	output.position = mul(float4(input.position, 1.0f), worldViewProj);
-
-	//Copy normal
-	output.normal = normalize(mul(input.normal, (float3x3) normalWorld));
-	output.tangent = normalize(mul(input.tangent, (float3x3) normalWorld));
 
 	//Copy uvs
 	output.uv = input.uv;

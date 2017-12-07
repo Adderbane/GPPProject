@@ -201,25 +201,24 @@ void Game::LoadResources()
 	pixelShaders.insert(pair<char*, SimplePixelShader*>("particlePS", particlePS));
 
 	//Load textures
-	ID3D11ShaderResourceView* wood = 0;
-	ID3D11ShaderResourceView* metal = 0;
 	ID3D11ShaderResourceView* marble = 0;
 	ID3D11ShaderResourceView* playerTex = 0;
 	ID3D11ShaderResourceView* enemy1 = 0;
+	ID3D11ShaderResourceView* crosshairs = 0;
 
 	//Load normal maps
 	ID3D11ShaderResourceView* playerNorm = 0;
 	ID3D11ShaderResourceView* enemyNorm = 0;
 
 	fire = 0;
-	CreateWICTextureFromFile(device, context, L"Assets/Textures/WoodFine0074.jpg", 0, &wood);
-	CreateWICTextureFromFile(device, context, L"Assets/Textures/BronzeCopper0011.jpg", 0, &metal);
+
 	CreateWICTextureFromFile(device, context, L"Assets/Textures/MarbleVeined0062.jpg", 0, &marble);
 	CreateWICTextureFromFile(device, context, L"Assets/Textures/SharpClawRacer.png", 0, &playerTex);
 	CreateWICTextureFromFile(device, context, L"Assets/Textures/Enemy.png", 0, &enemy1);
 	CreateWICTextureFromFile(device, context, L"Assets/Textures/fireParticle.jpg", 0, &fire);
 	CreateWICTextureFromFile(device, context, L"Assets/Textures/SharpClawNormal.png", 0, &playerNorm);
 	CreateWICTextureFromFile(device, context, L"Assets/Textures/EnemyNormal.png", 0, &enemyNorm);
+	CreateWICTextureFromFile(device, context, L"Assets/Textures/crosshair.png", 0, &crosshairs);
 
 	ID3D11ShaderResourceView* sky = 0;
 	CreateDDSTextureFromFile(device, L"Assets/Textures/space2.dds", 0, &sky);
@@ -245,23 +244,21 @@ void Game::LoadResources()
 	device->CreateSamplerState(&samplerDesc, &ppSampler);
 
 	//Make materials
-	materials.insert(pair<char*, Material*>("wood", new Material(vertexShaders.find("basicVertexShader")->second, pixelShaders.find("basicPixelShader")->second, wood, sampler)));
-	materials.insert(pair<char*, Material*>("metal", new Material(vertexShaders.find("basicVertexShader")->second, pixelShaders.find("basicPixelShader")->second, metal, sampler)));
-	materials.insert(pair<char*, Material*>("marble", new Material(vertexShaders.find("basicVertexShader")->second, pixelShaders.find("basicPixelShader")->second, marble, sampler)));
+
 	materials.insert(pair<char*, Material*>("playerTex", new Material(vertexShaders.find("shipVS")->second, pixelShaders.find("shipPS")->second, playerTex, playerNorm, sampler)));
 	materials.insert(pair<char*, Material*>("enemy1", new Material(vertexShaders.find("shipVS")->second, pixelShaders.find("shipPS")->second, enemy1, enemyNorm, sampler)));
 	materials.insert(pair<char*, Material*>("sky", new Material(vertexShaders.find("skyboxVS")->second, pixelShaders.find("skyboxPS")->second, sky, sampler)));
 	materials.insert(pair<char*, Material*>("bullet", new Material(vertexShaders.find("bulletVS")->second, pixelShaders.find("bulletPS")->second, marble, sampler)));
+	materials.insert(pair<char*, Material*>("crosshairs", new Material(vertexShaders.find("basicVertexShader")->second, pixelShaders.find("basicPixelShader")->second, crosshairs, sampler)));
 
 	//Release DirX stuff (references are added in each material)
-	wood->Release();
-	metal->Release();
 	marble->Release();
 	playerTex->Release();
 	playerNorm->Release();
 	enemy1->Release();
 	enemyNorm->Release();
 	sky->Release();
+	crosshairs->Release();
 	sampler->Release();
 
 	//Load Models
@@ -272,6 +269,7 @@ void Game::LoadResources()
 	meshes.insert(pair<char*, Mesh*>("sphere", new Mesh("Assets/Models/sphere.obj", device)));
 	meshes.insert(pair<char*, Mesh*>("player", new Mesh("Assets/Models/SharpClawRacer.obj", device)));
 	meshes.insert(pair<char*, Mesh*>("enemy1", new Mesh("Assets/Models/Enemy.obj", device)));
+	meshes.insert(pair<char*, Mesh*>("plane", new Mesh("Assets/Models/plane.obj", device)));
 
 	//Load font for UI
 	spriteBatch = new SpriteBatch(context);
@@ -346,6 +344,24 @@ void Game::SetupGameWorld()
 		b->Link(player);
 		lightManager->pointLights.push_back(b->GetLaser());
 	}
+
+	//Make reticule
+	ID3D11BlendState* rb;
+	D3D11_BLEND_DESC reticuleBlend = {};
+	reticuleBlend.AlphaToCoverageEnable = false;
+	reticuleBlend.IndependentBlendEnable = false;
+	reticuleBlend.RenderTarget[0].BlendEnable = true;
+	reticuleBlend.RenderTarget[0].BlendOp = D3D11_BLEND_OP_ADD;
+	reticuleBlend.RenderTarget[0].SrcBlend = D3D11_BLEND_SRC_ALPHA;
+	reticuleBlend.RenderTarget[0].DestBlend = D3D11_BLEND_INV_SRC_ALPHA;
+	reticuleBlend.RenderTarget[0].BlendOpAlpha = D3D11_BLEND_OP_ADD;
+	reticuleBlend.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_ONE;
+	reticuleBlend.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_ZERO;
+	reticuleBlend.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
+	device->CreateBlendState(&reticuleBlend, &rb);
+	reticule = new Reticule(meshes.find("plane")->second, materials.find("crosshairs")->second, player, targetManager, rb, fireManager->GetBullets().at(0)->GetRadius());
+	reticule->SetActive(true);
+	entities.push_back(reticule);
 
 	DirectionalLight d = DirectionalLight();
 	d.AmbientColor = XMFLOAT4(+0.2f, +0.2f, +0.2f, 1.0f);
@@ -602,10 +618,17 @@ void Game::DrawScene(float deltaTime, float totalTime)
 	//Draw Skybox next to last
 	DrawSkybox(skybox);
 
+	//Draw reticule (transparent so has to go after skybox
+	context->OMSetBlendState(reticule->GetBlend(), 0, 0xffffffff);
+	reticule->Draw(context, camera, lightManager);
+	ClearBlending();
+
 	//Draw Particles! This is a three step process, so here's what you do:
 	//Step 1: Set up your first blend state, like additive blending
 	SetAdditiveBlending();
 	
+	//
+
 	//Step 2: Draw the emitters using that blend state
 	leftThruster->Draw(context, camera);
 	rightThruster->Draw(context, camera);
