@@ -36,6 +36,9 @@ void TargetManager::ResetTargets()
 {
 	for each (Entity* e in targetList)
 	{
+		float spawnX = rand() % (int)(2 * xCap) - xCap;
+		float spawnY = rand() % (int)(2 * yCap) - yCap;
+		e->SetPosition(spawnX, spawnY, e->GetPosition().z);
 		e->SetActive(true);
 	}
 }

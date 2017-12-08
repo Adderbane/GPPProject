@@ -39,7 +39,7 @@ void Player::Update(float deltaTime, float totalTime)
 	XMFLOAT3 pos = GetPosition();
 	
 	Entity::Update(deltaTime, totalTime);
-	this->Move(0, 0, 2.0f * deltaTime);
+	this->Move(0, 0, 10.0f * deltaTime);
 	if (pos.x > xCap) {
 		pos.x = xCap;
 		velocity.x *= accelRate/1000;
