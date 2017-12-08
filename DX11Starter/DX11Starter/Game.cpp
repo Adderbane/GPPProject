@@ -527,6 +527,12 @@ void Game::Update(float deltaTime, float totalTime)
 
 	//Collision detection
 	CheckForCollisions(fireManager->GetBullets(), targetManager->GetTargets());
+
+	//Reset level when player passes end
+	if (player->GetPosition().z > 200) {
+		targetManager->ResetTargets();
+		player->SetPosition(player->GetPosition().x, player->GetPosition().y, -50);
+	}
 }
 
 void Game::CheckForCollisions(vector<Entity*> l1, vector<Entity*> l2)
