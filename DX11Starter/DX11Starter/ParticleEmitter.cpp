@@ -183,6 +183,7 @@ bool ParticleEmitter::IsActive()
 void ParticleEmitter::SetActive(bool active)
 {
 	this->active = active;
+	this->emitterLife = 0.0f;
 }
 
 void ParticleEmitter::UpdateSingleParticle(float dt, int index)

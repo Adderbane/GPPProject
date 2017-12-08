@@ -93,6 +93,7 @@ Game::~Game()
 	delete baseTarget;
 	delete bloomTarget;
 	delete bloomTarget2;
+	delete radialTarget;
 
 	//Clean up camera
 	delete camera;
@@ -199,6 +200,10 @@ void Game::LoadResources()
 	SimplePixelShader* particlePS = new SimplePixelShader(device, context);
 	particlePS->LoadShaderFile(L"ParticlePS.cso");
 	pixelShaders.insert(pair<char*, SimplePixelShader*>("particlePS", particlePS));
+
+	SimplePixelShader* radialPS = new SimplePixelShader(device, context);
+	radialPS->LoadShaderFile(L"RadialPS.cso");
+	pixelShaders.insert(pair<char*, SimplePixelShader*>("radialPS", radialPS));
 
 	//Load textures
 	ID3D11ShaderResourceView* marble = 0;
@@ -311,6 +316,9 @@ void Game::PrepPostProcessing()
 	//Light Bloom targets
 	bloomTarget = new DXRenderTarget(device, ppTexDesc, ppRTVDesc, ppSRVDesc);
 	bloomTarget2 = new DXRenderTarget(device, ppTexDesc, ppRTVDesc, ppSRVDesc);
+
+	//Radial blur
+	radialTarget = new DXRenderTarget(device, ppTexDesc, ppRTVDesc, ppSRVDesc);
 
 }
 
@@ -760,6 +768,14 @@ void Game::DrawPostProcessing()
 	blurPS->SetSamplerState("Sampler", ppSampler);
 
 	context->Draw(3, 0);
+
+	//ID3D11RenderTargetView* radialRTV = radialTarget->GetRTV();
+	//context->OMSetRenderTargets(1, &radialRTV, depthStencilView);
+	//context->ClearRenderTargetView(radialRTV, color);
+	//
+	//SimplePixelShader* radialPS = pixelShaders.find("radialPS")->second;
+
+	//context->Draw(3, 0);
 
 	//End Postprocessing
 

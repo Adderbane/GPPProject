@@ -91,6 +91,7 @@ private:
 	DXRenderTarget* baseTarget; //Render scene to here (pre-postprocessing)
 	DXRenderTarget* bloomTarget; //Render light bloom effects to here
 	DXRenderTarget* bloomTarget2;
+	DXRenderTarget* radialTarget;
 	float clipValue = 0.72f;
 	float verticalDir[2] = { 0.0f, 1.0f };
 	float horizontDir[2] = { 1.0f, 0.0f };
