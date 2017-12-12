@@ -353,8 +353,8 @@ void Game::SetupGameWorld()
 		500,							// Max particles
 		50,							// Particles per second
 		0.5f,								// Particle lifetime
-		0.3,							// Start size
-		0.1f,							// End size
+		0.5,							// Start size
+		0.15f,							// End size
 		XMFLOAT4(0.4f, 0.4f, 0.4f, 0.6f),	// Start color
 		XMFLOAT4(0, 0, 0, 0.5f),		// End color
 		XMFLOAT3(0, 0, 1),				// Start velocity
