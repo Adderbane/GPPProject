@@ -39,7 +39,7 @@ void Player::Update(float deltaTime, float totalTime)
 	XMFLOAT3 pos = GetPosition();
 	
 	Entity::Update(deltaTime, totalTime);
-	this->Move(0, 0, 2.0f * deltaTime);
+	this->Move(0, 0, 10.0f * deltaTime);
 	if (pos.x > xCap) {
 		pos.x = xCap;
 		velocity.x *= accelRate/1000;
@@ -79,7 +79,7 @@ void Player::Draw(ID3D11DeviceContext* context, Camera* camera, LightManager* li
 	}
 
 	//Get array of PointLights
-	PointLight lightArray[32] = {};
+	PointLight lightArray[64] = {};
 	for (size_t i = 0; i < lightManager->pointLights.size(); i++)
 	{
 		lightArray[i] = *(lightManager->pointLights[i]);
@@ -98,7 +98,7 @@ void Player::Draw(ID3D11DeviceContext* context, Camera* camera, LightManager* li
 	vShader->SetMatrix4x4("normalWorld", GetNormalWorld());
 
 	pShader->SetData("dirLight", &(lightManager->dirLight), sizeof(DirectionalLight));
-	pShader->SetData("lightList", &lightArray, sizeof(PointLight) * 32);
+	pShader->SetData("lightList", &lightArray, sizeof(PointLight) * 64);
 	pShader->SetData("pointLightCount", &lightCount, sizeof(int));
 	pShader->SetData("cameraPosition", &(camera->GetCamPosition()), sizeof(XMFLOAT3));
 	pShader->SetShaderResourceView("diffuseTexture", GetMaterial()->GetTexture());

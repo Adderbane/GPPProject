@@ -15,6 +15,7 @@
 #include "LightManager.h"
 #include "Bullet.h"
 #include "Skybox.h"
+#include "Reticule.h"
 #include "ParticleEmitter.h"
 #include <vector>
 #include "SpriteBatch.h"
@@ -62,6 +63,7 @@ private:
 	TargetManager* targetManager;
 	LightManager* lightManager;
 	Player* player;
+	Reticule* reticule;
 	Skybox* skybox;
 
 	//Resource Collections
@@ -90,6 +92,7 @@ private:
 	DXRenderTarget* baseTarget; //Render scene to here (pre-postprocessing)
 	DXRenderTarget* bloomTarget; //Render light bloom effects to here
 	DXRenderTarget* bloomTarget2;
+	DXRenderTarget* radialTarget;
 	float clipValue = 0.72f;
 	float verticalDir[2] = { 0.0f, 1.0f };
 	float horizontDir[2] = { 1.0f, 0.0f };

@@ -4,6 +4,7 @@
 
 TargetManager::TargetManager(Mesh* mesh, Material* material, ParticleEmitter* explosion, ParticleEmitter* thruster, ID3D11Device* device)
 {
+
 	if (spawnFixed) {
 		for (size_t i = 0; i < this->count; i++)
 		{
@@ -35,6 +36,9 @@ void TargetManager::ResetTargets()
 {
 	for each (Entity* e in targetList)
 	{
+		float spawnX = rand() % (int)(2 * xCap) - xCap;
+		float spawnY = rand() % (int)(2 * yCap) - yCap;
+		e->SetPosition(spawnX, spawnY, e->GetPosition().z);
 		e->SetActive(true);
 	}
 }
