@@ -5,7 +5,7 @@
 class Target : public Entity
 {
 public:
-	Target(Mesh* mesh, Material* material, ParticleEmitter* particle);
+	Target(Mesh* mesh, Material* material, ParticleEmitter* explosion, ParticleEmitter* thruster);
 	~Target();
 
 	void Update(float deltaTime, float totalTime) override;
@@ -13,7 +13,8 @@ public:
 	void DrawEmitter(ID3D11DeviceContext* context, Camera* camera);
 	void Collides() override;
 private:
-	ParticleEmitter* emitter;
+	ParticleEmitter* explosion;
+	ParticleEmitter* thruster;
 };
 
 

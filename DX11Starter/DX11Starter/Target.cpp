@@ -1,24 +1,29 @@
 #include "Target.h"
 
-Target::Target(Mesh* mesh, Material* material, ParticleEmitter* particle) : Entity(mesh, material)
+Target::Target(Mesh* mesh, Material* material, ParticleEmitter* explosion, ParticleEmitter* thruster) : Entity(mesh, material)
 {
-	this->emitter = particle;
-	this->emitter->SetActive(false);
+	this->explosion = explosion;
+	this->explosion->SetActive(false);
+	this->thruster = thruster;
 }
 
 Target::~Target()
 {
-	delete emitter;
+	delete explosion;
+	delete thruster;
 }
 
 void Target::Update(float deltaTime, float totalTime)
 {
 	if (this->IsActive() != true)
 	{
-		emitter->SetEmitterPosition(this->GetPosition());
-		emitter->Update(deltaTime);
+		explosion->SetEmitterPosition(this->GetPosition());
+		explosion->Update(deltaTime);
 		return;
 	}
+
+	thruster->SetEmitterPosition(XMFLOAT3(this->GetPosition().x, this->GetPosition().y + 0.15f, this->GetPosition().z + 0.3f));
+	thruster->Update(deltaTime);
 }
 
 void Target::Draw(ID3D11DeviceContext* context, Camera* camera, LightManager* lightManager)
@@ -64,11 +69,13 @@ void Target::Draw(ID3D11DeviceContext* context, Camera* camera, LightManager* li
 
 void Target::DrawEmitter(ID3D11DeviceContext * context, Camera * camera)
 {
-	emitter->Draw(context, camera);
+	explosion->Draw(context, camera);
+	thruster->Draw(context, camera);
 }
 
 void Target::Collides()
 {
-	this->emitter->SetActive(true);
+	this->explosion->SetActive(true);
+	this->thruster->SetActive(false);
 	this->SetActive(false);
 }

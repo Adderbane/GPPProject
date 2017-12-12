@@ -343,8 +343,25 @@ void Game::SetupGameWorld()
 		fire,
 		2);
 
+	thruster = new ParticleEmitter(
+		500,							// Max particles
+		50,							// Particles per second
+		0.5f,								// Particle lifetime
+		0.3,							// Start size
+		0.1f,							// End size
+		XMFLOAT4(0.4f, 0.4f, 0.4f, 0.6f),	// Start color
+		XMFLOAT4(0, 0, 0, 0.5f),		// End color
+		XMFLOAT3(0, 0, 1),				// Start velocity
+		XMFLOAT3(0, 0, 0),				// Start position
+		XMFLOAT3(0, 0, 3),				// Start acceleration
+		device,
+		vertexShaders.find("particleVS")->second,
+		pixelShaders.find("particlePS")->second,
+		fire,
+		NULL);
+
 	//Make target field
-	targetManager = new TargetManager(meshes.find("enemy1")->second, materials.find("enemy1")->second, smoke, device);
+	targetManager = new TargetManager(meshes.find("enemy1")->second, materials.find("enemy1")->second, smoke, thruster, device);
 	for each (Entity* e in targetManager->GetTargets())
 	{
 		entities.push_back(e);
