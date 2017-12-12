@@ -1,13 +1,11 @@
 
-static float blurWeights[16] = { 0.009033f,	0.018476f,	0.033851f,	0.055555f,	0.08167f,
-0.107545f,	0.126854f,	0.134032f,	0.126854f,	0.107545f,
-0.08167f,	0.055555f,	0.033851f,	0.018476f,	0.009033f, 0.0f };
+static float blurWeights[16] = { 0.132368, 0.125279, 0.106209, 0.080656,
+								 0.054865, 0.033431, 0.018246, 0.008920,
+								 0.003906, 0.001532, 0.000538, 0.000169,
+								 0.000048, 0.000012, 0.000003, 0.000001 };
 
 cbuffer Data : register(b0)
 {
-	float2 passDir;
-	float pixelWidth;
-	float pixelHeight;
 }
 
 // Defines the input to this pixel shader
@@ -26,11 +24,13 @@ float4 main(VertexToPixel input) : SV_TARGET
 {
 	float4 finalColor = float4(0,0,0,0);
 
-	for (int i = 0; i < 15; i++)
+	float2 vecToPoint = float2(0.5f, 0.5f) - input.uv;
+	float2 factor = saturate(length(vecToPoint) - 0.25f);
+	float2 passDir = factor * vecToPoint / 32.0f;
+	for (int i = 0; i < 16; i++)
 	{
-		float2 uv = input.uv + (i-7) * float2(passDir.x * pixelWidth * 2.0f, passDir.y * pixelHeight * 2.0f);
-		
-		finalColor += blurWeights[i] * BasePixels.Sample(Sampler, uv);
+		float2 uv = input.uv + (i) * float2(passDir.x, passDir.y);
+		finalColor += 2.0f * blurWeights[i] * BasePixels.Sample(Sampler, uv);
 	}
 
 	// Average color

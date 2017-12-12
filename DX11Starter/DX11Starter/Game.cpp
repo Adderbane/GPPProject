@@ -26,7 +26,7 @@ Game::Game(HINSTANCE hInstance)
 {
 	//Initialize camera
 	camera = new Camera((float)width, (float)height, 0.25f * XM_PI, 0.01f, 100.0f);
-	camera->SetPosition(0, 0, -3);
+	camera->SetPosition(0, 0, -53.0f);
 
 	prevMousePos.x = width/2;
 	prevMousePos.y = height/2;
@@ -485,8 +485,8 @@ void Game::Update(float deltaTime, float totalTime)
 	else fireManager->Fire(deltaTime, totalTime, false);
 
 	//player control
-	float aX = 0;
-	float aY = 0;
+	float aX = 0.0f;
+	float aY = 0.0f;
 	if (GetAsyncKeyState(VK_LEFT) & 0x8000 || GetAsyncKeyState('A') & 0x8000)
 	{
 		//move left
@@ -537,9 +537,9 @@ void Game::Update(float deltaTime, float totalTime)
 	CheckForCollisions(fireManager->GetBullets(), targetManager->GetTargets());
 
 	//Reset level when player passes end
-	if (player->GetPosition().z > 200) {
+	if (player->GetPosition().z > 350.0f) {
 		targetManager->ResetTargets();
-		player->SetPosition(player->GetPosition().x, player->GetPosition().y, -50);
+		player->SetPosition(player->GetPosition().x, player->GetPosition().y, -50.0f);
 	}
 }
 
@@ -775,13 +775,18 @@ void Game::DrawPostProcessing()
 
 	context->Draw(3, 0);
 
-	//ID3D11RenderTargetView* radialRTV = radialTarget->GetRTV();
-	//context->OMSetRenderTargets(1, &radialRTV, depthStencilView);
-	//context->ClearRenderTargetView(radialRTV, color);
-	//
-	//SimplePixelShader* radialPS = pixelShaders.find("radialPS")->second;
+	ID3D11RenderTargetView* radialRTV = radialTarget->GetRTV();
+	context->OMSetRenderTargets(1, &radialRTV, depthStencilView);
+	context->ClearRenderTargetView(radialRTV, color);
+	
+	SimplePixelShader* radialPS = pixelShaders.find("radialPS")->second;
+	radialPS->SetShader();
+	radialPS->SetSamplerState("Sampler", ppSampler);
+	radialPS->SetShaderResourceView("BasePixels", baseTarget->GetSRV());
 
-	//context->Draw(3, 0);
+	radialPS->CopyAllBufferData();
+
+	context->Draw(3, 0);
 
 	//End Postprocessing
 
@@ -793,11 +798,10 @@ void Game::DrawPostProcessing()
 	//Set post-processing shaders and variables
 	SimplePixelShader* ppPS = pixelShaders.find("PPPS")->second;
 
-	ppVS->SetShader();
 	ppPS->SetShader();
-
 	ppPS->SetShaderResourceView("BasePixels", baseTarget->GetSRV());
 	ppPS->SetShaderResourceView("LightBloom", bloomTarget->GetSRV());
+	ppPS->SetShaderResourceView("RadialBlur", radialTarget->GetSRV());
 	ppPS->SetSamplerState("Sampler", ppSampler);
 
 	//Draw to back buffer

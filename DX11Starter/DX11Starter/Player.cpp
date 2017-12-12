@@ -5,6 +5,7 @@ using namespace std;
 Player::Player(Mesh* mesh, Material* material) : Entity(mesh, material)
 {
 	this->SetActive(true);
+	this->SetPosition(0.0f, 0.0f, -50.0f);
 	this->SetRotation(-1.0f * XM_PIDIV2, XM_PI, 0.0f);
 	accelRate = 0.2f;
 	decelRate = 0.09f;
