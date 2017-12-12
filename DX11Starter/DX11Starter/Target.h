@@ -5,17 +5,18 @@
 class Target : public Entity
 {
 public:
-	Target(Mesh* mesh, Material* material, ParticleEmitter* particle);
+	Target(Mesh* mesh, Material* material, ParticleEmitter* explosion, ParticleEmitter* thruster);
 	~Target();
 
 	void Update(float deltaTime, float totalTime) override;
 	void Draw(ID3D11DeviceContext* context, Camera* camera, LightManager* lightManager) override;
 	void DrawEmitter(ID3D11DeviceContext* context, Camera* camera);
 	void Collides() override;
-
 	PointLight* GetEngine();
+
 private:
-	ParticleEmitter* emitter;
+	ParticleEmitter* explosion;
+	ParticleEmitter* thruster;
 	PointLight* engine;
 };
 

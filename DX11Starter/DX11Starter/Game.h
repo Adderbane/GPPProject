@@ -85,6 +85,7 @@ private:
 	ParticleEmitter* leftThruster;
 	ParticleEmitter* rightThruster;
 	ParticleEmitter* smoke;
+	ParticleEmitter* thruster;
 
 	//Postprocessing data
 	bool postProcessing = true;

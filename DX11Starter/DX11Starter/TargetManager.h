@@ -9,7 +9,7 @@ using namespace std;
 class TargetManager
 {
 public:
-	TargetManager(Mesh* mesh, Material* material, ParticleEmitter* particle, ID3D11Device* device);
+	TargetManager(Mesh* mesh, Material* material, ParticleEmitter* explosion, ParticleEmitter* thruster, ID3D11Device* device);
 	~TargetManager();
 
 	vector<Entity*> GetTargets();
