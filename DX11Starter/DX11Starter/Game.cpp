@@ -60,7 +60,7 @@ Game::~Game()
 	}
 	materials.clear();
 
-	//Clean up sampler
+	//Clean up ppsampler
 	ppSampler->Release();
 
 	//Clean up Game Objects
@@ -72,12 +72,6 @@ Game::~Game()
 
 	delete targetManager;
 	delete fireManager;
-
-	while (lightManager->pointLights.size() > 0)
-	{
-		delete lightManager->pointLights[lightManager->pointLights.size() - 1];
-		lightManager->pointLights.pop_back();
-	}
 	delete lightManager;
 
 	skybox->depthState->Release();
@@ -88,6 +82,10 @@ Game::~Game()
 	fire->Release();
 	additiveBlendState->Release();
 	particleDepthState->Release();
+	delete smoke;
+	delete leftThruster;
+	delete rightThruster;
+	delete thruster;
 
 	//Clean up render targets
 	delete baseTarget;
@@ -215,8 +213,6 @@ void Game::LoadResources()
 	ID3D11ShaderResourceView* playerNorm = 0;
 	ID3D11ShaderResourceView* enemyNorm = 0;
 
-	fire = 0;
-
 	CreateWICTextureFromFile(device, context, L"Assets/Textures/MarbleVeined0062.jpg", 0, &marble);
 	CreateWICTextureFromFile(device, context, L"Assets/Textures/SharpClawRacer.png", 0, &playerTex);
 	CreateWICTextureFromFile(device, context, L"Assets/Textures/Enemy.png", 0, &enemy1);
@@ -268,9 +264,6 @@ void Game::LoadResources()
 
 	//Load Models
 	meshes.insert(pair<char*, Mesh*>("cube", new Mesh("Assets/Models/cube.obj", device)));
-	meshes.insert(pair<char*, Mesh*>("cone", new Mesh("Assets/Models/cone.obj", device)));
-	meshes.insert(pair<char*, Mesh*>("cylinder", new Mesh("Assets/Models/cylinder.obj", device)));
-	meshes.insert(pair<char*, Mesh*>("helix", new Mesh("Assets/Models/helix.obj", device)));
 	meshes.insert(pair<char*, Mesh*>("sphere", new Mesh("Assets/Models/sphere.obj", device)));
 	meshes.insert(pair<char*, Mesh*>("player", new Mesh("Assets/Models/SharpClawRacer.obj", device)));
 	meshes.insert(pair<char*, Mesh*>("enemy1", new Mesh("Assets/Models/Enemy.obj", device)));
@@ -317,7 +310,7 @@ void Game::PrepPostProcessing()
 	bloomTarget = new DXRenderTarget(device, ppTexDesc, ppRTVDesc, ppSRVDesc);
 	bloomTarget2 = new DXRenderTarget(device, ppTexDesc, ppRTVDesc, ppSRVDesc);
 
-	//Radial blur
+	//Radial blur target
 	radialTarget = new DXRenderTarget(device, ppTexDesc, ppRTVDesc, ppSRVDesc);
 
 }
@@ -451,7 +444,7 @@ void Game::SetupGameWorld()
 	blend.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
 	device->CreateBlendState(&blend, &additiveBlendState);
 
-	// Set up particles
+	// Set up particles for player engines
 	leftThruster = new ParticleEmitter(
 		500,							// Max particles
 		50,							// Particles per second
@@ -468,7 +461,6 @@ void Game::SetupGameWorld()
 		pixelShaders.find("particlePS")->second,
 		fire,
 		NULL);
-
 	rightThruster = leftThruster->Clone(device);
 }
 
@@ -495,13 +487,14 @@ void Game::Update(float deltaTime, float totalTime)
 	if (GetAsyncKeyState(VK_ESCAPE))
 		Quit();
 
+	//Chech if player is firing
 	if (GetAsyncKeyState(VK_SPACE) & 0x8000)
 	{
 		fireManager->Fire(deltaTime, totalTime, true);
 	}
 	else fireManager->Fire(deltaTime, totalTime, false);
 
-	//player control
+	//Player movement control
 	float aX = 0.0f;
 	float aY = 0.0f;
 	if (GetAsyncKeyState(VK_LEFT) & 0x8000 || GetAsyncKeyState('A') & 0x8000)
@@ -616,14 +609,13 @@ void Game::Draw(float deltaTime, float totalTime)
 	context->IASetVertexBuffers(0, 1, &nothing, &stride, &offset);
 	context->IASetIndexBuffer(0, DXGI_FORMAT_R32_UINT, 0);
 
-	if (postProcessing == true)
-	{
-		DrawPostProcessing();
-	}
+	//Postprocssing effects
+	DrawPostProcessing();
 
 	//Turn off srvs to prevent DX errors
 	context->PSSetShaderResources(0, 16, nullSRVs);
 
+	//Draw ui
 	DrawScore();
 
 	// Present the back buffer to the user
@@ -791,6 +783,7 @@ void Game::DrawPostProcessing()
 
 	context->Draw(3, 0);
 
+	//Blur edges of screen to raidalTarget
 	ID3D11RenderTargetView* radialRTV = radialTarget->GetRTV();
 	context->OMSetRenderTargets(1, &radialRTV, depthStencilView);
 	context->ClearRenderTargetView(radialRTV, color);
@@ -811,7 +804,7 @@ void Game::DrawPostProcessing()
 	context->ClearRenderTargetView(backBufferRTV, color);
 	context->ClearDepthStencilView(depthStencilView, D3D11_CLEAR_DEPTH, 1.0f, 0);
 
-	//Set post-processing shaders and variables
+	//Combine postprocessing targets
 	SimplePixelShader* ppPS = pixelShaders.find("PPPS")->second;
 
 	ppPS->SetShader();
@@ -826,6 +819,7 @@ void Game::DrawPostProcessing()
 
 void Game::DrawScore()
 {
+	//Draw text
 	wstring scoreText = L"SCORE: " + to_wstring(score);
 	spriteBatch->Begin();
 	spriteFont->DrawString(spriteBatch, scoreText.c_str(), XMFLOAT2(10.0f, (float)height - 50.0f));
@@ -881,9 +875,6 @@ void Game::OnMouseUp(WPARAM buttonState, int x, int y)
 void Game::OnMouseMove(WPARAM buttonState, int x, int y)
 {
 	// Add any custom code here...
-
-	//Rotate camera
-	//camera->Rotate((float)(x - prevMousePos.x), (float)(y - prevMousePos.y));
 
 	// Save the previous mouse position, so we have it for the future
 	prevMousePos.x = x;

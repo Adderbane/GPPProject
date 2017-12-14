@@ -79,7 +79,7 @@ private:
 	Camera* camera;
 
 	// Particle stuff
-	ID3D11ShaderResourceView* fire;
+	ID3D11ShaderResourceView* fire = 0;
 	ID3D11DepthStencilState* particleDepthState;
 	ID3D11BlendState* additiveBlendState;
 	ParticleEmitter* leftThruster;

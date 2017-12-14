@@ -13,7 +13,7 @@ class Entity
 {
 public:
 	Entity(Mesh* mesh, Material* material);
-	~Entity();
+	virtual ~Entity();
 
 	//Control active toggle
 	bool IsActive();

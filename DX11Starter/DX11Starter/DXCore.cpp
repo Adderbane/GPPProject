@@ -68,6 +68,13 @@ DXCore::DXCore(
 // --------------------------------------------------------
 DXCore::~DXCore()
 {
+	// Release all DirectX resources
+	if (depthStencilView) { depthStencilView->Release(); }
+	if (backBufferRTV) { backBufferRTV->Release();}
+
+	if (swapChain) { swapChain->Release();}
+	if (context) { context->Release();}
+
 	bool DXLeakDebug = false;
 	ID3D11Debug* pDebug;
 	if (DXLeakDebug)
@@ -75,13 +82,8 @@ DXCore::~DXCore()
 		device->QueryInterface(IID_PPV_ARGS(&pDebug));
 	}
 
-	// Release all DirectX resources
-	if (depthStencilView) { depthStencilView->Release(); }
-	if (backBufferRTV) { backBufferRTV->Release();}
-
-	if (swapChain) { swapChain->Release();}
-	if (context) { context->Release();}
 	if (device) { device->Release();}
+
 
 	if (DXLeakDebug)
 	{

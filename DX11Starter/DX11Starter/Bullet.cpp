@@ -20,7 +20,6 @@ Bullet::Bullet(Mesh* mesh, Material* material) : Entity(mesh, material)
 
 Bullet::~Bullet()
 {
-	delete laser;
 }
 
 void Bullet::Update(float deltaTime, float totalTime)
